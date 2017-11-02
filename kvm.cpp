@@ -6,6 +6,7 @@
 #include <cerrno>
 #include <cstring>
 #include <sys/mman.h>
+#include "frontend/IODevice.h"
 
 using namespace std;
 
