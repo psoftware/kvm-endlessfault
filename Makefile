@@ -25,4 +25,4 @@ backend/%.o: backend/%.cpp backend/%.h
 
 clean:
 	rm -f *.o frontend/*.o
-	rm kvm
+	rm -f kvm
