@@ -1,3 +1,6 @@
+#ifndef KEYBOARD_H
+#define KEYBOARD_H
+
 #include "IODevice.h"
 #include <stdint.h>
 #include <pthread.h>
@@ -41,3 +44,5 @@ public:
 	// serve al backend per pushare eventi di inserimento come handler
 	void insert_keycode_event(uint8_t keycode);
 };
+
+#endif

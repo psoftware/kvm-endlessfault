@@ -24,5 +24,5 @@ backend/%.o: backend/%.cpp backend/%.h
 	g++ -c -o $@ $<
 
 clean:
-	rm -f *.o frontend/*.o
+	rm -f *.o frontend/*.o backend/*.o
 	rm -f kvm
