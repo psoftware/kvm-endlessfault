@@ -6,7 +6,10 @@
 #include <cerrno>
 #include <cstring>
 #include <sys/mman.h>
+
 #include "frontend/IODevice.h"
+#include "frontend/keyboard.h"
+#include "backend/ConsoleInput.h"
 
 using namespace std;
 
@@ -67,6 +70,9 @@ char code[4096] __attribute__ ((aligned(4096))) = {
  * machine. The code above uses it to contain the stack.
  */
 char data[4096] __attribute__ ((aligned(4096)));
+
+void initIO();
+void endIO();
 
 int main()
 {
@@ -195,6 +201,9 @@ int main()
 		return 1;
 	}
 
+	// a questo punto possiamo inizializzare le strutture per l'emulazione dei dispositivi di IO
+	initIO();
+
 	/* When we boot our virtual machine, it tries to fetch the first
 	 * instruction at physical address 0xfffffff0, like a real x86
 	 * machine. We have put our 'code' array at guest
@@ -259,5 +268,35 @@ int main()
 	 */
 	cout << regs.rax << endl;
 
+	// DA RIMUOVERE (SERVE PER NON FAR TERMINARE IL PROGRAMMA)
+	while(true);
+
+	// procediamo con la routine di ripristino dell'IO
+	endIO();
+
 	return 0;
+}
+
+// tastiera emulata (frontend)
+keyboard kb;
+
+// gestione input console (backend)
+ConsoleInput* console;
+
+void initIO()
+{
+	// colleghiamo la tastiera emulata all'input della console
+	console = ConsoleInput::getInstance();
+	console->attachKeyboard(&kb);
+
+	// avviamo il thread che si occuperà di gestire l'input della console
+	console->startEventThread();
+}
+
+void endIO()
+{
+	// questa operazione va fatta perchè altrimenti la console
+	// non tornebbe nello stato di funzionamento precedente
+	// all'instanziazione dell'oggetto ConsoleInput
+	console->resetConsole();
 }
