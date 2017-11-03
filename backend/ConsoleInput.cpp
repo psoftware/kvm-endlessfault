@@ -88,7 +88,7 @@ void* ConsoleInput::_mainThread(void *nullparam)
 		res = read(0, &newchar, 1);
 
 		// procediamo alla conversione
-		bool new_shift;
+		bool new_shift = is_shifted;
 		uint8_t newkeycode = ascii_to_keycode(newchar, new_shift);
 
 		// dobbiamo emulare i keycode, i quali gestiscono l'evento shift in maniera particolare.
@@ -143,8 +143,6 @@ ConsoleInput::encode_table ConsoleInput::enc_t = {
 
 uint8_t ConsoleInput::ascii_to_keycode(uint8_t ascii_c, bool& shift)
 {
-	shift = false;
-
 	// scorriamo i caratteri non shiftati
 	short pos = 0;
 	while (pos < encode_table::MAX_CODE && enc_t.tabmin[pos] != ascii_c)
@@ -154,7 +152,6 @@ uint8_t ConsoleInput::ascii_to_keycode(uint8_t ascii_c, bool& shift)
 	// ma teniamone conto
 	if(pos == encode_table::MAX_CODE)
 	{
-		shift = true;
 		pos = 0;
 		while (pos < encode_table::MAX_CODE && enc_t.tabmai[pos] != ascii_c)
 			pos++;
@@ -163,7 +160,13 @@ uint8_t ConsoleInput::ascii_to_keycode(uint8_t ascii_c, bool& shift)
 		// restituiamo un carattere nullo
 		if(pos == encode_table::MAX_CODE)
 			return 0;
+
+		// assegnamo qui lo shift per evitare di farlo nel caso il carattere
+		// non è stato trovato
+		shift = true;
 	}
+	else	// se abbiamo trovato il carattere nella prima tabella allora il carattere non è shiftato
+		shift = false;
 
 	return enc_t.tab[pos];
 }
