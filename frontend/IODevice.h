@@ -1,3 +1,6 @@
+#ifndef IODEVICE_H
+#define IODEVICE_H
+
 #include <stdint.h>
 
 typedef uint16_t io_addr;
@@ -10,3 +13,5 @@ class IODevice {
 	virtual uint16_t read_reg_word(io_addr addr);
 	virtual uint32_t read_reg_long(io_addr addr);
 };
+
+#endif
