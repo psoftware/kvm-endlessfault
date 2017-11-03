@@ -17,6 +17,7 @@ ConsoleInput* ConsoleInput::unique_instance = NULL;
 termios ConsoleInput::tty_attr_old;
 keyboard* ConsoleInput::attached_keyboard = NULL;
 pthread_t ConsoleInput::_thread;
+bool ConsoleInput::is_shifted = false;
 
 ConsoleInput::ConsoleInput()
 {
@@ -85,9 +86,84 @@ void* ConsoleInput::_mainThread(void *nullparam)
 	// inseriti nella console, appena questi sono disponibili
 	do {
 		res = read(0, &newchar, 1);
-		cout << "console: inoltrato " << (unsigned int)newchar << endl;
-		attached_keyboard->insert_keycode_event(newchar);
+
+		// procediamo alla conversione
+		bool new_shift;
+		uint8_t newkeycode = ascii_to_keycode(newchar, new_shift);
+
+		// dobbiamo emulare i keycode, i quali gestiscono l'evento shift in maniera particolare.
+		// ogni qual volta shift viene premuto o rilasciatova mandato un determinato keycode,
+		// diverso dal carattere digitato
+		if(is_shifted != new_shift && new_shift == true)
+			attached_keyboard->insert_keycode_event(0x2a);
+		else if(is_shifted != new_shift && new_shift == false)
+			attached_keyboard->insert_keycode_event(0xaa);
+		is_shifted = new_shift;
+
+		if(newkeycode)
+		{
+			cout << "console: inoltrato " << (unsigned int)newkeycode << endl;
+			attached_keyboard->insert_keycode_event(newkeycode);
+		}
 	}
 	// tecnicamente res non dovrebbe essere mai < 0
 	while(res >= 0);
+}
+
+// tabella delle traduzioni
+ConsoleInput::encode_table ConsoleInput::enc_t = {
+		{	// tab
+			0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+			0x0c,
+			0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19,
+			0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25,
+			0x26, 0x29, 0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32,
+			0x33, 0x34, 0x35, 0x56,
+			0x39, 0x1C, 0x0e, 0x01
+		},
+		{	// tamin
+			'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
+			'\'',
+			'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
+			'a', 's', 'd', 'f', 'g', 'h', 'j', 'k',
+			'l', '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm',
+			',', '.', '-', '<',
+			' ', '\n', '\b', 0x1B
+		},
+		{	// tabmai
+			'!', '"', '@', '$', '%', '&', '/', '(', ')', '=',
+			'?',
+			'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
+			'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K',
+			'L', '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M',
+			';', ':', '_', '>',
+			' ', '\r', '\b', 0x1B
+		}
+	};
+
+uint8_t ConsoleInput::ascii_to_keycode(uint8_t ascii_c, bool& shift)
+{
+	shift = false;
+
+	// scorriamo i caratteri non shiftati
+	short pos = 0;
+	while (pos < encode_table::MAX_CODE && enc_t.tabmin[pos] != ascii_c)
+		pos++;
+
+	// se non abbiamo trovato nulla cerchiamo tra quelli shiftati 
+	// ma teniamone conto
+	if(pos == encode_table::MAX_CODE)
+	{
+		shift = true;
+		pos = 0;
+		while (pos < encode_table::MAX_CODE && enc_t.tabmai[pos] != ascii_c)
+			pos++;
+
+		// se non abbiamo trovato nulla neanche al secondo tentativo
+		// restituiamo un carattere nullo
+		if(pos == encode_table::MAX_CODE)
+			return 0;
+	}
+
+	return enc_t.tab[pos];
 }

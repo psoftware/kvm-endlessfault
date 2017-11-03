@@ -6,6 +6,13 @@
 
 class ConsoleInput {
 private:
+	struct encode_table { //
+		static const int MAX_CODE = 46;
+		uint8_t tab[MAX_CODE];
+		uint8_t tabmin[MAX_CODE];
+		uint8_t tabmai[MAX_CODE];
+	};
+
 	// seguiamo il design pattern Singleton
 	static ConsoleInput *unique_instance;
 
@@ -18,6 +25,12 @@ private:
 
 	// ci servirà un thread per la gestione degli input perchè useremo read bloccanti
 	static pthread_t _thread;
+
+	// tabella per la codifica dei caratteri in keycode
+	static encode_table enc_t;
+
+	// dobbiamo ricordarci se abbiamo ricevuto un carattere shiftato
+	static bool is_shifted;
 
 	// il costruttore è privato perchè vogliamo seguire il design pattern Singleton
 	ConsoleInput();
@@ -41,6 +54,8 @@ private:
 	// starting point del thread che si occuperà di gestire l'input della console
 	static void* _mainThread(void *nullparam);
 
+	// dobbiamo convertire le codifiche ASCII dei caratteri ricevuti in keycode
+	static uint8_t ascii_to_keycode(uint8_t ascii_c, bool& shift);
 };
 
 #endif
