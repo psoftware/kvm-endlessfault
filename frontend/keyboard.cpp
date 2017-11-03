@@ -1,4 +1,7 @@
 #include "keyboard.h"
+#include <iostream>
+
+using namespace std;
 
 keyboard::keyboard() : RBR(0), TBR(0), STR(0), CMR(0), enabled(false), interrupt_enabled(false), interrupt_raised(false) {
 	pthread_mutex_init(&mutex, NULL);
@@ -20,15 +23,21 @@ uint8_t keyboard::read_reg_byte(io_addr addr)
 {
 	pthread_mutex_lock(&mutex);
 
+	uint8_t result = 0;
+
 	switch(addr) {
 		case RBR_addr:
 			STR &= ~FI_MASK;
 			interrupt_raised = false;
-			return RBR;
-		case STR_addr: return STR;
+			result = RBR;
+			break;
+		case STR_addr:
+			result= STR;
 	}
 
 	pthread_mutex_unlock(&mutex);
+
+	return result;
 }
 
 void keyboard::process_cmd()
@@ -53,8 +62,10 @@ void keyboard::insert_keycode_event(uint8_t keycode)
 {
 	pthread_mutex_lock(&mutex);
 
+	cout << "keyboard: ricevuto " << (unsigned int)keycode << endl;
+
 	if(!enabled)
-		return;
+		goto err;
 
 	// mettiamo il keycode nel registro RBR e segnaliamo che il buffer è pieno
 	RBR = keycode;
@@ -64,5 +75,6 @@ void keyboard::insert_keycode_event(uint8_t keycode)
 	if(interrupt_enabled)
 		interrupt_raised = true;
 
+err:
 	pthread_mutex_unlock(&mutex);
 }
