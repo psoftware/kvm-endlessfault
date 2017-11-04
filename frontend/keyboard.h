@@ -1,6 +1,8 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
+#define INTERNAL_BUFFER_SIZE 16
+
 #include "IODevice.h"
 #include <stdint.h>
 #include <pthread.h>
@@ -27,6 +29,12 @@ private:
 	bool enabled;
 	bool interrupt_enabled;
 
+	// buffer interno (l'hardware dell'Intel 8082 lo prevede)
+	uint8_t internal_buffer[INTERNAL_BUFFER_SIZE];
+	short buffer_head_pointer;
+	short buffer_tail_pointer;
+	short buffer_element_count;
+
 	bool interrupt_raised;
 
 	// mutex istanza (vale sia per frontend che backend)
@@ -34,6 +42,10 @@ private:
 
 private:
 	void process_cmd();
+
+	// questo metodo deve essere chiamato a seguito di una lettura su RBR
+	// per aggiornare il contenuto del registro RBR e STR
+	void next_RBR_FI();
 
 public:
 	keyboard();
