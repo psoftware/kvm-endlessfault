@@ -41,29 +41,19 @@ using namespace std;
  * and page-aligned. The alignment is given by the strange looking
  * "__attribute__ ((...))" syntax, which is a gcc extension.
  */
+
 char code[4096] __attribute__ ((aligned(4096))) = {
-	/* we setup a stack in the first physical page of the vm */
-	0xbc, 0x00, 0x10,                       // mov    $0x1000,%sp
-	/* then, we call the 'sum' function below, with arguments 2 and 3 */
-	0x6a, 0x02,                             // push   $0x2
-	0x6a, 0x03,                             // push   $0x3
-	0xe8, 0x04, 0x00,                       // call   e <sum>
-	/* after the return from the function, we clear up the stack
-	 * and stop the (virtual) machine
-	 */
-	0x83, 0xc4, 0x08,                       // add    $0x8,%sp
-	0xf4,                                   // hlt
-	/* here begins the code of the sum function, which just returns
-	 * the sum of its two arguments (received on the stack) in
-	 * the %ax register
-	 */
-	0x55,                                   // push   %bp
-	0x89, 0xe5,                             // mov    %sp,%bp
-	0x8b, 0x46, 0x06,                       // mov    0x6(%bp),%ax
-	0x8b, 0x56, 0x04,                       // mov    0x4(%bp),%dx
-	0x01, 0xd0,                             // add    %dx,%ax
-	0x5d,                                   // pop    %bp
-	0xc3,                                   // ret
+	0xb0, 0x60,								// mov		$0x60,%al
+	0xe6, 0x64,								// out		%al,$0x64
+	0xe6, 0x60,								// out		%al,$0x60
+
+//wait_char:
+	0xe4, 0x64,								// in		$0x64,%al
+	0xa8, 0x01,								// test		$0x1,%al
+	0x74, 0xfa,								// je		6 <wait_char>
+	0xe4, 0x60,								// in		$0x60,%al
+	0xf4,									// hlt		(diciamo al vm monitor di prelevare il risultato)
+	0xeb, 0xf5,								// jmp		6 <wait_char>
 };
 
 /* the following array will become the other page of memory for the
@@ -93,6 +83,25 @@ void endIO()
 	// non tornebbe nello stato di funzionamento precedente
 	// all'instanziazione dell'oggetto ConsoleInput
 	console->resetConsole();
+}
+
+// funzione chiamata su HLT del programma della vm per ottenere
+// un risultato dal programma
+void fetch_application_result(int vcpu_fd, kvm_run *kr) {
+	/* we can obtain the the contents of all the registers
+	 * in the vm.
+	 */
+	kvm_regs regs;
+	if (ioctl(vcpu_fd, KVM_GET_REGS, &regs) < 0) {
+		cerr << "get regs: " << strerror(errno) << endl;
+		return;
+	}
+	/* (this is for the general purpose registers, we can also
+	 * obtain the 'special registers' with KVM_GET_SREGS).
+	 */
+
+	// dobbiamo leggere al, quindi eliminiamo la parte restante da rax
+	cout << "Risultato programma (keycode): " << (regs.rax & 0xff) << endl;
 }
 
 int main()
@@ -267,7 +276,7 @@ int main()
 		switch(kr->exit_reason)
 		{
 			case KVM_EXIT_HLT:
-				continue_run=false;
+				fetch_application_result(vcpu_fd, kr);
 				break;
 			case KVM_EXIT_IO:
 			{
@@ -303,37 +312,6 @@ int main()
 				return 1;
 		}
 	}
-
-	/* If we are here, the virtual machine is stopped, waiting
-	 * for us to do something.
-	 * The code we have prepared only exits because of the 'hlt'
-	 * instruction. If everything is working correctly, the
-	 * following instruction should print 'Exit reason: 5',
-	 * since 5 is the code for KVM_EXIT_HLT
-	 * (see the definitions in /usr/include/linux/kvm.h).
-	 */
-	cout << "Exit reason: " << kr->exit_reason << endl;
-
-	/* we can also obtain the the contents of all the registers
-	 * in the vm.
-	 */
-	kvm_regs regs;
-	if (ioctl(vcpu_fd, KVM_GET_REGS, &regs) < 0) {
-		cerr << "get regs: " << strerror(errno) << endl;
-		return 1;
-	}
-	/* (this is for the general purpose registers, we can also
-	 * obtain the 'special registers' with KVM_GET_SREGS).
-	 */
-
-	/* if everthing is well, we should find 5=2+3 in the %rax
-	 * register (the register names follow the 64 bit convention;
-	 * our %ax register is in the lowest part of %rax).
-	 */
-	cout << regs.rax << endl;
-
-	// DA RIMUOVERE (SERVE PER NON FAR TERMINARE IL PROGRAMMA)
-	while(true);
 
 	// procediamo con la routine di ripristino dell'IO
 	endIO();
