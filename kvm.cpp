@@ -290,11 +290,15 @@ int main()
 			}
 			case KVM_EXIT_FAIL_ENTRY:
 				cerr << "kvm: KVM_EXIT_FAIL_ENTRY reason=" << (unsigned long long)kr->fail_entry.hardware_entry_failure_reason << endl;
+				return 1;
+				break;
 			case KVM_EXIT_INTERNAL_ERROR:
 				cerr << "kvm: KVM_EXIT_INTERNAL_ERROR suberror=" << kr->internal.suberror << endl;
+				return 1;
+				break;
 			default:
 				cerr << "kvm: Unhandled VM_EXIT" << endl;
-				return 0;
+				return 1;
 		}
 	}
 
