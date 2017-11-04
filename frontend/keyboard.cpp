@@ -3,7 +3,7 @@
 
 using namespace std;
 
-keyboard::keyboard() : RBR(0), TBR(0), STR(0), CMR(0), enabled(true), interrupt_enabled(false),
+keyboard::keyboard() : RBR(0), TBR(0), STR(0), CMR(0), enabled(false), interrupt_enabled(false),
 	buffer_head_pointer(0), buffer_tail_pointer(0), buffer_element_count(0), interrupt_raised(false) {
 	pthread_mutex_init(&mutex, NULL);
 }
@@ -45,10 +45,10 @@ void keyboard::process_cmd()
 	switch(CMR) {
 		// === configurazione tastiera ===
 		case 0x60:
-			if(TBR & 0x10)	// bit 4: abilitazione tastiera
-				enabled = true;
-			else
+			if(TBR & 0x10)	// bit 4: disabilitazione tastiera
 				enabled = false;
+			else
+				enabled = true;
 
 			if(TBR & 0x01)	// bit 0: abilitazione interruzioni
 				interrupt_enabled = true;
