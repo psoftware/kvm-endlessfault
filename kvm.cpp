@@ -71,8 +71,29 @@ char code[4096] __attribute__ ((aligned(4096))) = {
  */
 char data[4096] __attribute__ ((aligned(4096)));
 
-void initIO();
-void endIO();
+// tastiera emulata (frontend)
+keyboard keyb;
+
+// gestione input console (backend)
+ConsoleInput* console;
+
+void initIO()
+{
+	// colleghiamo la tastiera emulata all'input della console
+	console = ConsoleInput::getInstance();
+	console->attachKeyboard(&keyb);
+
+	// avviamo il thread che si occuperà di gestire l'input della console
+	console->startEventThread();
+}
+
+void endIO()
+{
+	// questa operazione va fatta perchè altrimenti la console
+	// non tornebbe nello stato di funzionamento precedente
+	// all'instanziazione dell'oggetto ConsoleInput
+	console->resetConsole();
+}
 
 int main()
 {
@@ -222,8 +243,8 @@ int main()
 	 * in 2's-complement on 16 bits: this is 0xf00d.
 	 */
 	code[0xff1] = 0x0d; /* recall that the machine is little endian:
-			     * lowest byte goes first
-			     */
+				 * lowest byte goes first
+				 */
 	code[0xff2] = 0xf0;
 
 	/* we are finally ready to start the machine, by issuing
@@ -235,9 +256,37 @@ int main()
 	 * appropriate action (e.g., emulate I/O) and re-enter
 	 * the vm, by issuing another KVM_RUN ioctl().
 	 */
-	if (ioctl(vcpu_fd, KVM_RUN, 0) < 0) {
-		cerr << "run: " << strerror(errno) << endl;
-		return 1;
+	bool continue_run = true;
+	while(continue_run)
+	{
+		if (ioctl(vcpu_fd, KVM_RUN, 0) < 0) {
+			cerr << "run: " << strerror(errno) << endl;
+			return 1;
+		}
+
+		switch(kr->exit_reason)
+		{
+			case KVM_EXIT_HLT:
+				continue_run=false;
+				break;
+			case KVM_EXIT_IO:
+				// questo è il puntatore alla sez di memoria che contiene l'operando da restituire o leggere
+				// (in base al tipo di operazione che la vm vuole fare, cioè in o out)
+				uint8_t *io_param = (uint8_t*)kr + kr->io.data_offset;
+
+				// ======== Tastiera ========
+				if (kr->io.size == 1 && kr->io.count == 1 && (kr->io.port == 0x60 || kr->io.port == 0x64))
+				{
+					if(kr->io.direction == KVM_EXIT_IO_OUT)
+						keyb.write_reg_byte(kr->io.port, *io_param);
+					else if(kr->io.direction == KVM_EXIT_IO_IN)
+						*io_param = keyb.read_reg_byte(kr->io.port);
+				}
+				else
+					cerr << "kvm: Unhandled VM IO" << endl;
+					return 1;
+				break;
+		}
 	}
 
 	/* If we are here, the virtual machine is stopped, waiting
@@ -275,28 +324,4 @@ int main()
 	endIO();
 
 	return 0;
-}
-
-// tastiera emulata (frontend)
-keyboard kb;
-
-// gestione input console (backend)
-ConsoleInput* console;
-
-void initIO()
-{
-	// colleghiamo la tastiera emulata all'input della console
-	console = ConsoleInput::getInstance();
-	console->attachKeyboard(&kb);
-
-	// avviamo il thread che si occuperà di gestire l'input della console
-	console->startEventThread();
-}
-
-void endIO()
-{
-	// questa operazione va fatta perchè altrimenti la console
-	// non tornebbe nello stato di funzionamento precedente
-	// all'instanziazione dell'oggetto ConsoleInput
-	console->resetConsole();
 }
