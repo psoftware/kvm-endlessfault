@@ -270,6 +270,7 @@ int main()
 				continue_run=false;
 				break;
 			case KVM_EXIT_IO:
+			{
 				// questo è il puntatore alla sez di memoria che contiene l'operando da restituire o leggere
 				// (in base al tipo di operazione che la vm vuole fare, cioè in o out)
 				uint8_t *io_param = (uint8_t*)kr + kr->io.data_offset;
@@ -286,6 +287,14 @@ int main()
 					cerr << "kvm: Unhandled VM IO" << endl;
 					return 1;
 				break;
+			}
+			case KVM_EXIT_FAIL_ENTRY:
+				cerr << "kvm: KVM_EXIT_FAIL_ENTRY reason=" << (unsigned long long)kr->fail_entry.hardware_entry_failure_reason << endl;
+			case KVM_EXIT_INTERNAL_ERROR:
+				cerr << "kvm: KVM_EXIT_INTERNAL_ERROR suberror=" << kr->internal.suberror << endl;
+			default:
+				cerr << "kvm: Unhandled VM_EXIT" << endl;
+				return 0;
 		}
 	}
 
