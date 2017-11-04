@@ -284,8 +284,10 @@ int main()
 						*io_param = keyb.read_reg_byte(kr->io.port);
 				}
 				else
+				{
 					cerr << "kvm: Unhandled VM IO" << endl;
 					return 1;
+				}
 				break;
 			}
 			case KVM_EXIT_FAIL_ENTRY:
