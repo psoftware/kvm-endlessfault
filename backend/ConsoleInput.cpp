@@ -1,8 +1,3 @@
-#include "unistd.h"
-#include "linux/kd.h"
-#include "termios.h"
-#include "fcntl.h"
-#include "sys/ioctl.h"
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,13 +6,6 @@
 #include "ConsoleInput.h"
 
 using namespace std;
-
-// variabili statiche (vedi commenti nel file header)
-ConsoleInput* ConsoleInput::unique_instance = NULL;
-termios ConsoleInput::tty_attr_old;
-keyboard* ConsoleInput::attached_keyboard = NULL;
-pthread_t ConsoleInput::_thread;
-bool ConsoleInput::is_shifted = false;
 
 ConsoleInput::ConsoleInput()
 {
@@ -39,18 +27,13 @@ ConsoleInput::~ConsoleInput()
 {
 	// la console va ripristinata
 	resetConsole();
-
-	// eliminiamo l'istanza globale
-	delete unique_instance;
 }
 
 ConsoleInput* ConsoleInput::getInstance()
 {
 	// seguiamo il design pattern Singleton
-	if(unique_instance == NULL)
-		unique_instance = new ConsoleInput();
-
-	return unique_instance;
+	static ConsoleInput unique_instance;
+	return &unique_instance;
 }
 
 void ConsoleInput::resetConsole()
@@ -74,11 +57,16 @@ bool ConsoleInput::startEventThread() {
 		return false;
 
 	// lasciamo al thread il compito di ottenere l'input dalla console
-	pthread_create(&_thread, NULL, &ConsoleInput::_mainThread, NULL);
+	pthread_create(&_thread, NULL, &ConsoleInput::_mainThread, this);
 }
 
-void* ConsoleInput::_mainThread(void *nullparam)
+void* ConsoleInput::_mainThread(void *This_par)
 {
+	// con pthread_create non è possibile fare chiamate su metodi non statici delle classi,
+	// per questo motivo "emuliamo" un metodo non statico definendone uno statico alla quale
+	// passiamo il parametro this, in questo caso chiamato This_par
+	ConsoleInput* This = (ConsoleInput*)This_par;
+
 	char newchar;
 	int res;
 
@@ -88,26 +76,26 @@ void* ConsoleInput::_mainThread(void *nullparam)
 		res = read(0, &newchar, 1);
 
 		// procediamo alla conversione
-		bool new_shift = is_shifted;
+		bool new_shift = This->is_shifted;
 		uint8_t newkeycode = ascii_to_keycode(newchar, new_shift);
 
 		// dobbiamo emulare i keycode, i quali gestiscono l'evento shift in maniera particolare.
 		// ogni qual volta shift viene premuto o rilasciatova mandato un determinato keycode,
 		// diverso dal carattere digitato
-		if(is_shifted != new_shift && new_shift == true)
-			attached_keyboard->insert_keycode_event(0x2a);
-		else if(is_shifted != new_shift && new_shift == false)
-			attached_keyboard->insert_keycode_event(0xaa);
-		is_shifted = new_shift;
+		if(This->is_shifted != new_shift && new_shift == true)
+			This->attached_keyboard->insert_keycode_event(0x2a);
+		else if(This->is_shifted != new_shift && new_shift == false)
+			This->attached_keyboard->insert_keycode_event(0xaa);
+		This->is_shifted = new_shift;
 
 		// se il keycode è stato correttamente convertito allora procediamo all'invio
 		// dell'evento di keydown e in seguito keyup (per emulare l'evento di press)
 		if(newkeycode)
 		{
 			cout << "console: inoltrato (down) " << (unsigned int)newkeycode << endl;
-			attached_keyboard->insert_keycode_event(newkeycode);
+			This->attached_keyboard->insert_keycode_event(newkeycode);
 			cout << "console: inoltrato (up)" << (unsigned int)(newkeycode | 0x80) << endl;
-			attached_keyboard->insert_keycode_event(newkeycode | 0x80);
+			This->attached_keyboard->insert_keycode_event(newkeycode | 0x80);
 		}
 	}
 	// tecnicamente res non dovrebbe essere mai < 0
