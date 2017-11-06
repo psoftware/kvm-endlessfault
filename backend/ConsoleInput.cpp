@@ -100,10 +100,14 @@ void* ConsoleInput::_mainThread(void *nullparam)
 			attached_keyboard->insert_keycode_event(0xaa);
 		is_shifted = new_shift;
 
+		// se il keycode è stato correttamente convertito allora procediamo all'invio
+		// dell'evento di keydown e in seguito keyup (per emulare l'evento di press)
 		if(newkeycode)
 		{
-			cout << "console: inoltrato " << (unsigned int)newkeycode << endl;
+			cout << "console: inoltrato (down) " << (unsigned int)newkeycode << endl;
 			attached_keyboard->insert_keycode_event(newkeycode);
+			cout << "console: inoltrato (up)" << (unsigned int)(newkeycode | 0x80) << endl;
+			attached_keyboard->insert_keycode_event(newkeycode | 0x80);
 		}
 	}
 	// tecnicamente res non dovrebbe essere mai < 0
