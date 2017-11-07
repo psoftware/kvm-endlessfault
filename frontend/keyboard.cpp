@@ -28,8 +28,13 @@ uint8_t keyboard::read_reg_byte(io_addr addr)
 
 	switch(addr) {
 		case RBR_addr:
+			// chiediamo a RBR e FI di aggiornare il proprio stato:
+			// RBR è aggiornato con il valore da leggere,
+			next_RBR();
 			result = RBR;
-			next_RBR_FI();
+			// FI è aggiornato in base a se ci sono ancora keycode
+			// da prelevare dal buffer
+			update_FI();
 			break;
 		case STR_addr:
 			result= STR;
@@ -58,10 +63,10 @@ void keyboard::process_cmd()
 	}
 }
 
-void keyboard::next_RBR_FI()
+void keyboard::next_RBR()
 {
-	// se abbiamo caratteri nel buffer non possiamo abbassare FI
-	// ma dobbiamo aggiornare il contenuto di RBR prelevando
+	// se abbiamo caratteri nel buffer alziamo FI
+	// e aggiorniamo il contenuto di RBR prelevando
 	// il primo keycode dalla coda
 	if(buffer_element_count != 0)
 	{
@@ -69,12 +74,16 @@ void keyboard::next_RBR_FI()
 		buffer_tail_pointer = (buffer_tail_pointer + 1) % INTERNAL_BUFFER_SIZE;
 		buffer_element_count--;
 	}
-	// altrimenti abbassiamo FI perchè non ci sono ancora caratteri
-	// da leggere
+}
+
+void keyboard::update_FI()
+{
+	// se abbiamo caratteri nel buffer alziamo FI
+	if(buffer_element_count != 0)
+		STR |= FI_MASK;
+	// altrimenti abbassiamolo
 	else
-	{
 		STR &= ~FI_MASK;
-	}
 }
 
 void keyboard::insert_keycode_event(uint8_t keycode)
@@ -93,28 +102,16 @@ void keyboard::insert_keycode_event(uint8_t keycode)
 		goto err;
 	}
 
-	// se il registro di lettura ancora non è stato letto allora
-	// dobbiamo inserire il keycode in coda
-	if(STR & FI_MASK)
-	{
-		cout << "keyboard: inserito in coda" << endl;
-		// inseriamo il keycode nel buffer (coda)
-		internal_buffer[buffer_head_pointer] = keycode;
-		buffer_head_pointer = (buffer_head_pointer + 1) % INTERNAL_BUFFER_SIZE;
-		buffer_element_count++;
-	}
-	// altrimenti mettiamo il keycode nel registro RBR e segnaliamo
-	// che il registro può essere letto
-	else
-	{
-		cout << "keyboard: inserito in RBR" << endl;
-		RBR = keycode;
-		STR |= FI_MASK;
-	}
+	// inseriamo il keycode nel buffer (coda)
+	cout << "keyboard: inserito in coda" << endl;
 
-	// provochiamo un'interruzione
-	//if(interrupt_enabled)
-		//interrupt_raised = true;
+	internal_buffer[buffer_head_pointer] = keycode;
+	buffer_head_pointer = (buffer_head_pointer + 1) % INTERNAL_BUFFER_SIZE;
+	buffer_element_count++;
+
+	// alziamo il bit FI, ma lo deleghiamo a update_FI() per gestire eventuali
+	// eventi di interruzione
+	update_FI();
 
 err:
 	pthread_mutex_unlock(&mutex);

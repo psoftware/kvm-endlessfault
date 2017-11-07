@@ -43,9 +43,13 @@ private:
 private:
 	void process_cmd();
 
-	// questo metodo deve essere chiamato a seguito di una lettura su RBR
+	// questo metodo deve essere chiamato prima di una lettura su RBR
 	// per aggiornare il contenuto del registro RBR e STR
-	void next_RBR_FI();
+	void next_RBR();
+
+	// questo metodo è chiamato per aggiornare FI in base allo stato
+	// del buffer (vuoto/non vuoto)
+	void update_FI();
 
 public:
 	keyboard();
