@@ -295,7 +295,7 @@ int main()
 				else
 				{
 					cerr << "kvm: Unhandled VM IO" << endl;
-					return 1;
+					break;
 				}
 				break;
 			}
