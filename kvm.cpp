@@ -42,7 +42,7 @@ using namespace std;
  * "__attribute__ ((...))" syntax, which is a gcc extension.
  */
 
-char code[4096] __attribute__ ((aligned(4096))) = {
+unsigned char code[4096] __attribute__ ((aligned(4096))) = {
 	0xb0, 0x60,								// mov		$0x60,%al
 	0xe6, 0x64,								// out		%al,$0x64
 	0xe6, 0x60,								// out		%al,$0x60

@@ -1,4 +1,4 @@
-COMM_CFLAGS=-std=gnu++98
+COMM_CFLAGS=-std=gnu++14
 LD_FLAGS=-pthread
 
 FRONTEND_CPP_FILES := $(wildcard frontend/*.cpp)
