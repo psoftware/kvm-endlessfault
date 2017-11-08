@@ -15,7 +15,7 @@ ELF_OBJ_FILES = $(patsubst elf/%.cpp,elf/%.o,$(ELF_CPP_FILES))
 
 all: kvm elf prog_prova
 
-kvm: kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES)
+kvm: kvm.o elf/estrattore.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES)
 	g++ kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) -o kvm $(LD_FLAGS)
 
 elf: $(ELF_OBJ_FILES)

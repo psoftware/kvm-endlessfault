@@ -104,6 +104,7 @@ void fetch_application_result(int vcpu_fd, kvm_run *kr) {
 	cout << "Risultato programma (keycode): " << (regs.rax & 0xff) << endl;
 }
 
+extern void estrai_segmento(char *fname, void *dest);
 int main()
 {
 	/* the first thing to do is to open the /dev/kvm pseudo-device,
