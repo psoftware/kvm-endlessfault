@@ -7,16 +7,15 @@ FRONTEND_OBJ_FILES = $(patsubst frontend/%.cpp,frontend/%.o,$(FRONTEND_CPP_FILES
 BACKEND_CPP_FILES := $(wildcard backend/*.cpp)
 BACKEND_OBJ_FILES = $(patsubst backend/%.cpp,backend/%.o,$(BACKEND_CPP_FILES))
 
-ELF_CPP_FILES := $(wildcard elf/*.cpp)
-ELF_OBJ_FILES = $(patsubst elf/%.cpp,elf/%.o,$(ELF_CPP_FILES))
+ELF_OBJ_FILES = elf/elf64.o elf/estrattore.o elf/interp.o
 
 
 ## -- linking
 
 all: kvm elf prog_prova
 
-kvm: kvm.o elf/estrattore.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES)
-	g++ kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) -o kvm $(LD_FLAGS)
+kvm: kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
+	g++ kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) -o kvm $(LD_FLAGS)
 
 elf: $(ELF_OBJ_FILES)
 	g++ $(ELF_OBJ_FILES) -o caric $(LD_FLAGS)
