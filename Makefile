@@ -7,6 +7,9 @@ FRONTEND_OBJ_FILES = $(patsubst frontend/%.cpp,frontend/%.o,$(FRONTEND_CPP_FILES
 BACKEND_CPP_FILES := $(wildcard backend/*.cpp)
 BACKEND_OBJ_FILES = $(patsubst backend/%.cpp,backend/%.o,$(BACKEND_CPP_FILES))
 
+ELF_CPP_FILES := $(wildcard elf/*.cpp)
+ELF_OBJ_FILES = $(patsubst elf/%.cpp,elf/%.o,$(ELF_CPP_FILES))
+
 
 ## -- linking
 
@@ -14,6 +17,9 @@ all: kvm
 
 kvm: kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES)
 	g++ kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) -o kvm $(LD_FLAGS)
+
+elf: $(ELF_OBJ_FILES)
+	g++ $(ELF_OBJ_FILES) -o caric $(LD_FLAGS)
 
 ## -- compilazione
 
@@ -26,6 +32,9 @@ frontend/%.o: frontend/%.cpp frontend/%.h
 backend/%.o: backend/%.cpp backend/%.h
 	g++ -c -o $@ $< $(COMM_CFLAGS)
 
+elf/%.o: elf/%.cpp elf/%.h
+	g++ -c -o $@ $< $(COMM_CFLAGS)
+
 clean:
-	rm -f *.o frontend/*.o backend/*.o
+	rm -f *.o frontend/*.o backend/*.o elf/*.o
 	rm -f kvm
