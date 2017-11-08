@@ -10,8 +10,6 @@ int main(int argc, char** argv)
 	FILE* file;
 	uint64_t entry_point;
 	uint64_t last_address;
-	//TabCache c;
-	//entrata *e[5];
 	char *fname;
 	//
 	if(argc < 2)
@@ -40,6 +38,7 @@ int main(int argc, char** argv)
 	}
 
 	entry_point = exe->entry_point();
+	cout << "entry_point:" << std::hex << entry_point << endl;
 
 
 	// dall'intestazione, calcoliamo l'inizio della tabella dei segmenti di programma
@@ -58,10 +57,10 @@ int main(int argc, char** argv)
 
 		ind_virtuale &= 0xfffffffffffff000;
 		end_addr = (end_addr + 0x0000000000000fff) & 0xfffffffffffff000;
-		/*for (; ind_virtuale < end_addr; ind_virtuale += sizeof(pagina))
+		for (; ind_virtuale < end_addr; ind_virtuale += 4096)
 		{
-			log << "    addr " << std::hex << ind_virtuale << std::dec << "\n";
-			block_t b;
+			cout << "    addr " << std::hex << ind_virtuale << std::dec << "\n";
+			/*block_t b;
 			for (int l = 4; l > 1; l--) {
 				int i = i_tabella(ind_virtuale, l);
 				e[l] = &tab[l].e[i];
@@ -108,8 +107,8 @@ int main(int argc, char** argv)
 			e[1]->a.RW |= s->scrivibile();
 			e[1]->a.US |= liv;
 			c.scrivi(1);
-			s->prossima_pagina();
-		}*/
+			s->prossima_pagina();*/
+		}
 
 	}
 	fclose(file);
