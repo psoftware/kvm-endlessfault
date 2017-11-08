@@ -46,6 +46,7 @@ class EseguibileElf64: public Eseguibile {
 		virtual bool copia_pagina(void* dest);
 		virtual bool prossima_pagina();
 		virtual bool pagina_di_zeri() const;
+		virtual uint64_t copia_segmento(void *dest);
 		~SegmentoElf64() {}
 	};
 
@@ -192,6 +193,16 @@ bool EseguibileElf64::SegmentoElf64::copia_pagina(void* dest)
 	}
 	return true;
 }
+
+uint64_t EseguibileElf64::SegmentoElf64::copia_segmento(void *dest)
+{
+	if (fseek(padre->pexe, curr_offset, SEEK_SET) != 0) {
+		fprintf(stderr, "errore nel file ELF\n");
+		exit(EXIT_FAILURE);
+	}
+	return fread(dest, 1, this->dimensione(), padre->pexe);
+}
+
 
 Eseguibile* InterpreteElf64::interpreta(FILE* pexe)
 {
