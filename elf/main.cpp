@@ -4,7 +4,7 @@ using namespace std;
 extern void estrai_segmento(char *fname, void *dest);
 #define DIM 20000
 
-char mem1[DIM];
+unsigned char mem1[DIM];
 
 int main(int argc, char** argv)
 {

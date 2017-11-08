@@ -52,7 +52,7 @@ void estrai_segmento(char *fname, void *dest)
 		cout << "byte copiati in m1 " << std::dec << s->copia_segmento(dest) << endl;
 
 		for(int i=0; i<dimensione; i++){
-			printf("%x",((char*)dest)[i]);
+			printf("%x",((unsigned char*)dest)[i]);
 		}
 		cout << endl;
 	}
