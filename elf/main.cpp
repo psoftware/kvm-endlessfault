@@ -9,7 +9,7 @@ using namespace std;
 char mem1[DIM];
 
 
-int estrai_segmento(char *fname)
+int estrai_segmento(char *fname, void *dest)
 {
 
 	FILE* file;
@@ -53,10 +53,10 @@ int estrai_segmento(char *fname)
 
 		ind_virtuale &= 0xfffffffffffff000;
 		end_addr = (end_addr + 0x0000000000000fff) & 0xfffffffffffff000;*/
-		cout << "byte copiati in m1 " << std::dec << s->copia_segmento(mem1) << endl;
+		cout << "byte copiati in m1 " << std::dec << s->copia_segmento(dest) << endl;
 
 		for(int i=0; i<dimensione; i++){
-			printf("%x",mem1[i]);
+			printf("%x",((char*)dest)[i]);
 		}
 		cout << endl;
 	}
@@ -78,5 +78,5 @@ int main(int argc, char** argv)
 	} else
 		fname = argv[1];
 	//
-	estrai_segmento(fname);
+	estrai_segmento(fname,mem1);
 }
