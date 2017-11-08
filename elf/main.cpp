@@ -8,23 +8,13 @@ using namespace std;
 
 char mem1[DIM];
 
-int main(int argc, char** argv)
+
+int estrai_segmento(char *fname)
 {
 
 	FILE* file;
 	uint64_t entry_point;
 	uint64_t last_address;
-	char *fname;
-	//
-	if(argc < 2)
-	{
-		cout << "inserisci il filename." << endl;
-		return -1;
-	} else
-		fname = argv[1];
-	memset(mem1,'c',DIM);
-	//
-
 
 	if ( !(file = fopen(fname, "rb")) ) {
 		perror(fname);
@@ -71,4 +61,22 @@ int main(int argc, char** argv)
 		cout << endl;
 	}
 	fclose(file);
+}
+
+int main(int argc, char** argv)
+{
+
+	FILE* file;
+	uint64_t entry_point;
+	uint64_t last_address;
+	char *fname;
+	//
+	if(argc < 2)
+	{
+		cout << "inserisci il filename." << endl;
+		return -1;
+	} else
+		fname = argv[1];
+	//
+	estrai_segmento(fname);
 }
