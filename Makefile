@@ -13,13 +13,16 @@ ELF_OBJ_FILES = $(patsubst elf/%.cpp,elf/%.o,$(ELF_CPP_FILES))
 
 ## -- linking
 
-all: kvm
+all: kvm elf prog_prova
 
 kvm: kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES)
 	g++ kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) -o kvm $(LD_FLAGS)
 
 elf: $(ELF_OBJ_FILES)
 	g++ $(ELF_OBJ_FILES) -o caric $(LD_FLAGS)
+
+prog_prova: elf/prog_prova.c
+	gcc elf/prog_prova.c -o prog_prova
 
 ## -- compilazione
 
@@ -37,4 +40,4 @@ elf/%.o: elf/%.cpp elf/%.h
 
 clean:
 	rm -f *.o frontend/*.o backend/*.o elf/*.o
-	rm -f kvm
+	rm -f kvm caric
