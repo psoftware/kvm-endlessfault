@@ -1,8 +1,12 @@
 #include "interp.h"
 #include <iostream>
 #include <cstdio>
+#include <cstring>
 
 using namespace std;
+#define DIM 20000
+
+char mem1[DIM];
 
 int main(int argc, char** argv)
 {
@@ -18,7 +22,9 @@ int main(int argc, char** argv)
 		return -1;
 	} else
 		fname = argv[1];
+	memset(mem1,'c',DIM);
 	//
+
 
 	if ( !(file = fopen(fname, "rb")) ) {
 		perror(fname);
@@ -49,67 +55,20 @@ int main(int argc, char** argv)
 		uint64_t dimensione = s->dimensione();
 		uint64_t end_addr = ind_virtuale + dimensione;
 
-		cout << "==> seg dim " << std::hex << dimensione << " addr " <<
+		cout << "==> seg dim " << std::dec << dimensione << " addr " << std::hex <<
 			ind_virtuale << "\n";
 
-		if (end_addr > last_address)
+		/*if (end_addr > last_address)
 			last_address = end_addr;
 
 		ind_virtuale &= 0xfffffffffffff000;
-		end_addr = (end_addr + 0x0000000000000fff) & 0xfffffffffffff000;
-		for (; ind_virtuale < end_addr; ind_virtuale += 4096)
-		{
-			cout << "    addr " << std::hex << ind_virtuale << std::dec << "\n";
-			/*block_t b;
-			for (int l = 4; l > 1; l--) {
-				int i = i_tabella(ind_virtuale, l);
-				e[l] = &tab[l].e[i];
-				log << "       T" << l << "[" << i << "] ->";
-				if (e[l]->a.block == 0) {
-					b = c.nuova(l - 1);
-					log << " NEW";
-					e[l]->a.block = b;
-					e[l]->a.PWT   = 0;
-					e[l]->a.PCD   = 0;
-					e[l]->a.RW    = 1;
-					e[l]->a.US    = liv;
-					e[l]->a.P     = 0;
-					c.scrivi(l);
-				} else {
-					c.leggi(l - 1, e[l]->a.block);
-				}
-				log << " T" << (l - 1) << " at " << e[l]->a.block << "\n";
-			}
+		end_addr = (end_addr + 0x0000000000000fff) & 0xfffffffffffff000;*/
+		cout << "byte copiati in m1 " << std::dec << s->copia_segmento(mem1) << endl;
 
-			int i = i_tabella(ind_virtuale, 1);
-			e[1] = &tab[1].e[i];
-			log << "       T1[" << i << "] ->";
-			if (e[1]->a.block == 0) {
-				if (! bm_alloc(&blocks, b) ) {
-					fprintf(stderr, "%s: spazio insufficiente nello swap\n", fname);
-					exit(EXIT_FAILURE);
-				}
-				e[1]->a.block = b;
-				log << " NEW";
-			} else {
-				CHECKSW(leggi_blocco, e[1]->a.block, &pag);
-			}
-			if (s->pagina_di_zeri()) {
-				e[1]->a.zeroed = 1;
-				log << " zero";
-			} else {
-				s->copia_pagina(&pag);
-				CHECKSW(scrivi_blocco, e[1]->a.block, &pag);
-			}
-			log << " page at " << e[1]->a.block << "\n";
-			e[1]->a.PWT = 0;
-			e[1]->a.PCD = 0;
-			e[1]->a.RW |= s->scrivibile();
-			e[1]->a.US |= liv;
-			c.scrivi(1);
-			s->prossima_pagina();*/
+		for(int i=0; i<dimensione; i++){
+			cout << std::hex << mem1[i];
 		}
-
+		cout << endl;
 	}
 	fclose(file);
 }
