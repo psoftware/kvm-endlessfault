@@ -12,13 +12,13 @@ ELF_OBJ_FILES = elf/elf64.o elf/estrattore.o elf/interp.o
 
 ## -- linking
 
-all: kvm elf prog_prova
+all: kvm caric prog_prova
 
 kvm: kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
 	g++ kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) -o kvm $(LD_FLAGS)
 
-elf: $(ELF_OBJ_FILES)
-	g++ $(ELF_OBJ_FILES) -o caric $(LD_FLAGS)
+caric: $(ELF_OBJ_FILES) elf/main.o
+	g++ $(ELF_OBJ_FILES) elf/main.o -o caric $(LD_FLAGS)
 
 prog_prova: elf/prog_prova.c
 	gcc -nostdlib elf/prog_prova.c -o prog_prova
