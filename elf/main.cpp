@@ -66,7 +66,7 @@ int main(int argc, char** argv)
 		cout << "byte copiati in m1 " << std::dec << s->copia_segmento(mem1) << endl;
 
 		for(int i=0; i<dimensione; i++){
-			cout << std::hex << mem1[i];
+			printf("%x",mem1[i]);
 		}
 		cout << endl;
 	}
