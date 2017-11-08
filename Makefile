@@ -22,7 +22,7 @@ elf: $(ELF_OBJ_FILES)
 	g++ $(ELF_OBJ_FILES) -o caric $(LD_FLAGS)
 
 prog_prova: elf/prog_prova.c
-	gcc elf/prog_prova.c -o prog_prova
+	gcc -nostdlib elf/prog_prova.c -o prog_prova
 
 ## -- compilazione
 
@@ -40,4 +40,4 @@ elf/%.o: elf/%.cpp elf/%.h
 
 clean:
 	rm -f *.o frontend/*.o backend/*.o elf/*.o
-	rm -f kvm caric
+	rm -f kvm caric prog_prova
