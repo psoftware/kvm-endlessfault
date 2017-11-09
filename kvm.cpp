@@ -107,8 +107,23 @@ void fetch_application_result(int vcpu_fd, kvm_run *kr) {
 }
 
 extern void estrai_segmento(char *fname, void *dest);
-int main()
+int main(int argc, char **argv)
 {
+	// controllo parametri in ingresso
+	if(argc != 2) {
+		cout << "Formato non corretto. Uso: kvm <elf file>" << endl;
+		return 1;
+	}
+
+	// controllo validità del path
+	char *elf_file_path = argv[1];
+	FILE *elf_file = fopen(elf_file_path, "r");
+	if(!elf_file) {
+		cout << "Il file selezionato non esiste" << endl;
+		return 1;
+	}
+	fclose(elf_file);
+
 	/* the first thing to do is to open the /dev/kvm pseudo-device,
 	 * obtaining a file descriptor.
 	 */
@@ -147,8 +162,7 @@ int main()
 	 */
 
 	// carichiamo l'eseguibile da file
-	char elf_file[] = "prog_prova";
-	estrai_segmento(elf_file, (void*)code);
+	estrai_segmento(elf_file_path, (void*)code);
 
 	/* This is the descriptor for the 'data' page.
 	 * We want to put this page at guest physical address 0
