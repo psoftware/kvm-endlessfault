@@ -384,7 +384,7 @@ int main(int argc, char **argv)
 		{
 			case KVM_EXIT_HLT:
 				fetch_application_result(vcpu_fd, kr);
-				break;
+				return 1;
 			case KVM_EXIT_IO:
 			{
 				// questo è il puntatore alla sez di memoria che contiene l'operando da restituire o leggere
@@ -398,6 +398,11 @@ int main(int argc, char **argv)
 						keyb.write_reg_byte(kr->io.port, *io_param);
 					else if(kr->io.direction == KVM_EXIT_IO_IN)
 						*io_param = keyb.read_reg_byte(kr->io.port);
+				}
+				else if (kr->io.size == 1 && kr->io.count == 1 && kr->io.port == 0x02F8 && kr->io.direction == KVM_EXIT_IO_OUT)
+				{
+					// usato per debuggare i programmi
+					printf("kvm: Risultato su Porta parallela: %d\n", *io_param);
 				}
 				else
 				{
