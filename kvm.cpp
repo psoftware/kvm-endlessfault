@@ -301,7 +301,7 @@ int main()
 				}
 				else
 				{
-					cerr << "kvm: Unhandled VM IO" << endl;
+					cerr << "kvm: Unhandled VM IO: " <<  ((kr->io.direction == KVM_EXIT_IO_IN)?"IN":"OUT") << " on kr->io.port " << kr->io.port << endl;
 					break;
 				}
 				break;
@@ -315,7 +315,7 @@ int main()
 				return 1;
 				break;
 			default:
-				cerr << "kvm: Unhandled VM_EXIT" << endl;
+				cerr << "kvm: Unhandled VM_EXIT reason=" << kr->exit_reason << endl;
 				return 1;
 		}
 	}
