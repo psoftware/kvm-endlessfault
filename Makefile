@@ -1,5 +1,6 @@
 COMM_CFLAGS=-std=gnu++14
 LD_FLAGS=-pthread
+ELFPROG_CFLAGS=-nostdlib -Ttext=0
 
 FRONTEND_CPP_FILES := $(wildcard frontend/*.cpp)
 FRONTEND_OBJ_FILES = $(patsubst frontend/%.cpp,frontend/%.o,$(FRONTEND_CPP_FILES))
@@ -21,7 +22,7 @@ caric: $(ELF_OBJ_FILES) elf/main.o
 	g++ $(ELF_OBJ_FILES) elf/main.o -o caric $(LD_FLAGS)
 
 prog_prova: elf/prog_prova.c
-	gcc -nostdlib elf/prog_prova.c -o prog_prova
+	gcc $(ELFPROG_CFLAGS) elf/prog_prova.c -o prog_prova
 
 ## -- compilazione
 
