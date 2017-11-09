@@ -13,16 +13,16 @@ ELF_OBJ_FILES = elf/elf32.o elf/elf64.o elf/estrattore.o elf/interp.o
 
 ## -- linking
 
-all: kvm caric prog_prova
+all: kvm build/caric build/prog_prova
 
 kvm: kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
 	g++ kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) -o kvm $(LD_FLAGS)
 
-caric: $(ELF_OBJ_FILES) elf/main.o
-	g++ $(ELF_OBJ_FILES) elf/main.o -o caric $(LD_FLAGS)
+build/caric: $(ELF_OBJ_FILES) elf/main.o
+	g++ $(ELF_OBJ_FILES) elf/main.o -o build/caric $(LD_FLAGS)
 
-prog_prova: elf/prog_prova.c elf/prog_prova.s
-	gcc $(ELFPROG_CFLAGS) elf/prog_prova.c elf/prog_prova.s -o prog_prova
+build/prog_prova: elf/prog_prova.c elf/prog_prova.s
+	gcc $(ELFPROG_CFLAGS) elf/prog_prova.c elf/prog_prova.s -o build/prog_prova
 
 ## -- compilazione
 
@@ -40,4 +40,5 @@ elf/%.o: elf/%.cpp elf/%.h
 
 clean:
 	rm -f *.o frontend/*.o backend/*.o elf/*.o
-	rm -f kvm caric prog_prova
+	rm -f kvm
+	rm -f build/*
