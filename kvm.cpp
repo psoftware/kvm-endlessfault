@@ -42,7 +42,7 @@ using namespace std;
  * "__attribute__ ((...))" syntax, which is a gcc extension.
  */
 
-unsigned char code[4096] __attribute__ ((aligned(4096))) = {
+/*unsigned char code[4096] __attribute__ ((aligned(4096))) = {
 	0xb0, 0x60,								// mov		$0x60,%al
 	0xe6, 0x64,								// out		%al,$0x64
 	0xe6, 0x60,								// out		%al,$0x60
@@ -54,7 +54,9 @@ unsigned char code[4096] __attribute__ ((aligned(4096))) = {
 	0xe4, 0x60,								// in		$0x60,%al
 	0xf4,									// hlt		(diciamo al vm monitor di prelevare il risultato)
 	0xeb, 0xf5,								// jmp		6 <wait_char>
-};
+};*/
+
+unsigned char code[4096] __attribute__ ((aligned(4096)));
 
 /* the following array will become the other page of memory for the
  * machine. The code above uses it to contain the stack.
@@ -143,6 +145,10 @@ int main()
 	 * to emulate a ROM). The remaining fields should be
 	 * obvious.
 	 */
+
+	// carichiamo l'eseguibile da file
+	char elf_file[] = "prog_prova";
+	estrai_segmento(elf_file, (void*)code);
 
 	/* This is the descriptor for the 'data' page.
 	 * We want to put this page at guest physical address 0
