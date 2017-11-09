@@ -13,7 +13,7 @@ ELF_OBJ_FILES = elf/elf32.o elf/elf64.o elf/estrattore.o elf/interp.o
 
 ## -- linking
 
-all: kvm build/caric build/prog_prova
+all: kvm build/caric build/prog_prova build/keyboard_program
 
 kvm: kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
 	g++ kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) -o kvm $(LD_FLAGS)
@@ -23,6 +23,9 @@ build/caric: $(ELF_OBJ_FILES) elf/main.o
 
 build/prog_prova: elf/prog_prova.c elf/prog_prova.s
 	gcc $(ELFPROG_CFLAGS) elf/prog_prova.c elf/prog_prova.s -o build/prog_prova
+
+build/keyboard_program: elf/keyboard_program.s
+	gcc $(ELFPROG_CFLAGS) elf/keyboard_program.s -o build/keyboard_program
 
 ## -- compilazione
 
