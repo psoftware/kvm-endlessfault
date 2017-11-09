@@ -56,12 +56,14 @@ using namespace std;
 	0xeb, 0xf5,								// jmp		6 <wait_char>
 };*/
 
+const uint32_t USER_CODE_START = 0xfffff000;
+
 unsigned char code[4096] __attribute__ ((aligned(4096)));
 
 /* the following array will become the other page of memory for the
  * machine. The code above uses it to contain the stack.
  */
-char data[4096] __attribute__ ((aligned(4096)));
+unsigned char data[4096] __attribute__ ((aligned(4096)));
 
 // tastiera emulata (frontend)
 keyboard keyb;
@@ -117,6 +119,92 @@ void trace_user_program(int vcpu_fd, kvm_run *kr) {
 	printf("RSP: %x\n", (unsigned int)regs.rsp);
 }
 
+/* CR0 bits */
+#define CR0_PE 1
+#define CR0_MP (1 << 1)
+#define CR0_EM (1 << 2)
+#define CR0_TS (1 << 3)
+#define CR0_ET (1 << 4)
+#define CR0_NE (1 << 5)
+#define CR0_WP (1 << 16)
+#define CR0_AM (1 << 18)
+#define CR0_NW (1 << 29)
+#define CR0_CD (1 << 30)
+#define CR0_PG (1 << 31)
+
+void fill_segment_descriptor(uint64_t *dt, struct kvm_segment *seg)
+{
+	uint16_t index = seg->selector >> 3;
+	uint32_t limit = seg->g ? seg->limit >> 12 : seg->limit;
+	dt[index] = (limit & 0xffff) /* Limit bits 0:15 */
+		| (seg->base & 0xffffff) << 16 /* Base bits 0:23 */
+		| (uint64_t)seg->type << 40
+		| (uint64_t)seg->s << 44 /* system or code/data */
+		| (uint64_t)seg->dpl << 45 /* Privilege level */
+		| (uint64_t)seg->present << 47
+		| (limit & 0xf0000ULL) << 48 /* Limit bits 16:19 */
+		| (uint64_t)seg->avl << 52 /* Available for system software */
+		| (uint64_t)seg->l << 53 /* 64-bit code segment */
+		| (uint64_t)seg->db << 54 /* 16/32-bit segment */
+		| (uint64_t)seg->g << 55 /* 4KB granularity */
+		| (seg->base & 0xff000000ULL) << 56; /* Base bits 24:31 */
+}
+
+static void setup_protected_mode(int vcpu_fd , unsigned char *data_mem, uint64_t entry_point)
+{
+	kvm_sregs sregs;
+	if (ioctl(vcpu_fd, KVM_GET_SREGS, &sregs) < 0) {
+		perror("KVM_GET_SREGS:");
+		exit(1);
+	}
+
+	kvm_segment seg;
+	seg.base = 0;
+	seg.limit = 0xffffffff;
+	seg.present = 1;
+	seg.dpl = 0;
+	seg.db = 1;
+	seg.s = 1; /* Code/data */
+	seg.l = 0;
+	seg.g = 1; /* 4KB granularity */
+
+	uint64_t *gdt;
+
+	sregs.cr0 |= CR0_PE; /* enter protected mode */
+	sregs.gdt.base = 0x1000;
+	sregs.gdt.limit = 3 * 8 - 1;
+
+	gdt = (uint64_t *)(data_mem + sregs.gdt.base);
+	/* gdt[0] is the null segment */
+
+	seg.type = 11; /* Code: execute, read, accessed */
+	seg.selector = 1 << 3;
+	fill_segment_descriptor(gdt, &seg);
+	sregs.cs = seg;
+
+	seg.type = 3; /* Data: read/write, accessed */
+	seg.selector = 2 << 3;
+	fill_segment_descriptor(gdt, &seg);
+	sregs.ds = sregs.es = sregs.fs = sregs.gs
+		= sregs.ss = seg;
+
+	if (ioctl(vcpu_fd, KVM_SET_SREGS, &sregs) < 0) {
+		perror("KVM_SET_SREGS:");
+		exit(1);
+	}
+
+	/* Clear all FLAGS bits, except bit 1 which is always set. */
+	kvm_regs regs;
+	memset(&regs, 0, sizeof(regs));
+
+	regs.rflags = 2;
+	regs.rip = entry_point;
+
+	if (ioctl(vcpu_fd, KVM_SET_REGS, &regs) < 0) {
+		perror("KVM_SET_REGS: ");
+		exit(1);
+	}
+}
 
 extern uint32_t estrai_segmento(char *fname, void *dest);
 int main(int argc, char **argv)
@@ -174,7 +262,7 @@ int main(int argc, char **argv)
 	 */
 
 	// carichiamo l'eseguibile da file
-	estrai_segmento(elf_file_path, (void*)code);
+	uint32_t entry_point = estrai_segmento(elf_file_path, (void*)code);
 
 	/* This is the descriptor for the 'data' page.
 	 * We want to put this page at guest physical address 0
@@ -206,7 +294,7 @@ int main(int argc, char **argv)
 	kvm_userspace_memory_region mrc = {
 		1,					// slot
 		0,					// no flags,
-		0xfffff000,				// guest physical addr
+		USER_CODE_START,				// guest physical addr
 		4096,					// memory size
 		reinterpret_cast<__u64>(code)		// userspace addr
 	};
@@ -267,27 +355,13 @@ int main(int argc, char **argv)
 	// a questo punto possiamo inizializzare le strutture per l'emulazione dei dispositivi di IO
 	initIO();
 
-	/* When we boot our virtual machine, it tries to fetch the first
-	 * instruction at physical address 0xfffffff0, like a real x86
-	 * machine. We have put our 'code' array at guest
-	 * physical address 0xfffff000, but the instructions we want
-	 * to execute are at the beginning, while the first instruction
-	 * fetched starts at position 0xff0 inside the code array.
-	 * Here, we place a jump back to the start of the page.
-	 */
-	code[0xff0] = 0xe9; // jmp
-	/* the jmp needs the offset, in bytes, from the first
-	 * byte after the jmp instruction itself to the target.
-	 * The jmp is three bytes long, so the first byte after
-	 * it is at guest physical address 0xfffffff3.
-	 * The target is at 0xfffff000, so there are 0xff3 bytes
-	 * between them. We need to jump back, so we need -0xff3,
-	 * in 2's-complement on 16 bits: this is 0xf00d.
-	 */
-	code[0xff1] = 0x0d; /* recall that the machine is little endian:
-				 * lowest byte goes first
-				 */
-	code[0xff2] = 0xf0;
+	cout << endl << "================== Memory Dump ==================" << endl;
+	for(int i=0; i<4096; i++)
+		printf("%x",((unsigned char*)code)[i]);
+	cout << endl << "=================================================" << endl;
+
+	//passiamo alla modalità protetta
+	setup_protected_mode(vcpu_fd, data, entry_point);
 
 	/* we are finally ready to start the machine, by issuing
 	 * the KVM_RUN ioctl() on the vcpu_fd. While the machine
