@@ -3,9 +3,13 @@
 	return a+b;
 }*/
 
-void _start()
+// -Wl,--build-id=none
+
+unsigned int main()
 {
-	int a=2, b=10;
+	unsigned int a=2, b=10;
 	//int c = sum(a,b);
-	int c = a+b;
+	unsigned int c = a+b;
+
+	return c;
 }

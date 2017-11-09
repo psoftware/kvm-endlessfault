@@ -1,6 +1,6 @@
 COMM_CFLAGS=-std=gnu++14
 LD_FLAGS=-pthread
-ELFPROG_CFLAGS=-nostdlib -Ttext=0
+ELFPROG_CFLAGS=-nostdlib -Ttext=0xfffff000 -fno-asynchronous-unwind-tables -m32
 
 FRONTEND_CPP_FILES := $(wildcard frontend/*.cpp)
 FRONTEND_OBJ_FILES = $(patsubst frontend/%.cpp,frontend/%.o,$(FRONTEND_CPP_FILES))
@@ -21,8 +21,8 @@ kvm: kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
 caric: $(ELF_OBJ_FILES) elf/main.o
 	g++ $(ELF_OBJ_FILES) elf/main.o -o caric $(LD_FLAGS)
 
-prog_prova: elf/prog_prova.c
-	gcc -m32 $(ELFPROG_CFLAGS) elf/prog_prova.c -o prog_prova
+prog_prova: elf/prog_prova.c elf/prog_prova.s
+	gcc $(ELFPROG_CFLAGS) elf/prog_prova.c elf/prog_prova.s -o prog_prova
 
 ## -- compilazione
 
