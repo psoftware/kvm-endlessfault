@@ -106,7 +106,19 @@ void fetch_application_result(int vcpu_fd, kvm_run *kr) {
 	cout << "Risultato programma (keycode): " << (regs.rax & 0xff) << endl;
 }
 
-extern void estrai_segmento(char *fname, void *dest);
+void trace_user_program(int vcpu_fd, kvm_run *kr) {
+	kvm_regs regs;
+	if (ioctl(vcpu_fd, KVM_GET_REGS, &regs) < 0) {
+		cerr << "get regs: " << strerror(errno) << endl;
+		return;
+	}
+
+	printf("RIP: %x\n", (unsigned int)regs.rip);
+	printf("RSP: %x\n", (unsigned int)regs.rsp);
+}
+
+
+extern uint32_t estrai_segmento(char *fname, void *dest);
 int main(int argc, char **argv)
 {
 	// controllo parametri in ingresso
@@ -320,16 +332,28 @@ int main(int argc, char **argv)
 				}
 				break;
 			}
+			case KVM_EXIT_MMIO:
+				cerr << "kvm: KVM_EXIT_MMIO"
+						<< " address=" << std::hex << (uint64_t)kr->mmio.phys_addr
+						<< " len=" << (uint32_t)kr->mmio.len
+						<< " data=" << (uint32_t)((kr->mmio.data[3] << 24) | (kr->mmio.data[2] << 16) | (kr->mmio.data[1] << 8) | kr->mmio.data[0])
+						<< " is_write=" << (short)kr->mmio.is_write << endl;
+				trace_user_program(vcpu_fd, kr);
+				return 1;
+				break;
 			case KVM_EXIT_FAIL_ENTRY:
 				cerr << "kvm: KVM_EXIT_FAIL_ENTRY reason=" << (unsigned long long)kr->fail_entry.hardware_entry_failure_reason << endl;
+				trace_user_program(vcpu_fd, kr);
 				return 1;
 				break;
 			case KVM_EXIT_INTERNAL_ERROR:
 				cerr << "kvm: KVM_EXIT_INTERNAL_ERROR suberror=" << kr->internal.suberror << endl;
+				trace_user_program(vcpu_fd, kr);
 				return 1;
 				break;
 			default:
 				cerr << "kvm: Unhandled VM_EXIT reason=" << kr->exit_reason << endl;
+				trace_user_program(vcpu_fd, kr);
 				return 1;
 		}
 	}
