@@ -8,7 +8,7 @@ FRONTEND_OBJ_FILES = $(patsubst frontend/%.cpp,frontend/%.o,$(FRONTEND_CPP_FILES
 BACKEND_CPP_FILES := $(wildcard backend/*.cpp)
 BACKEND_OBJ_FILES = $(patsubst backend/%.cpp,backend/%.o,$(BACKEND_CPP_FILES))
 
-ELF_OBJ_FILES = elf/elf64.o elf/estrattore.o elf/interp.o
+ELF_OBJ_FILES = elf/elf32.o elf/elf64.o elf/estrattore.o elf/interp.o
 
 
 ## -- linking
@@ -22,7 +22,7 @@ caric: $(ELF_OBJ_FILES) elf/main.o
 	g++ $(ELF_OBJ_FILES) elf/main.o -o caric $(LD_FLAGS)
 
 prog_prova: elf/prog_prova.c
-	gcc $(ELFPROG_CFLAGS) elf/prog_prova.c -o prog_prova
+	gcc -m32 $(ELFPROG_CFLAGS) elf/prog_prova.c -o prog_prova
 
 ## -- compilazione
 
