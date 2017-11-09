@@ -103,7 +103,7 @@ void fetch_application_result(int vcpu_fd, kvm_run *kr) {
 	 */
 
 	// dobbiamo leggere al, quindi eliminiamo la parte restante da rax
-	cout << "Risultato programma (keycode): " << (regs.rax & 0xff) << endl;
+	cout << "Risultato programma (keycode): " << regs.rax << endl;
 }
 
 void trace_user_program(int vcpu_fd, kvm_run *kr) {
