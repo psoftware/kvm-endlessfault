@@ -5,9 +5,8 @@
 
 using namespace std;
 
-void estrai_segmento(char *fname, void *dest)
+uint32_t estrai_segmento(char *fname, void *dest)
 {
-
 	FILE* file;
 	uint64_t entry_point;
 	uint64_t last_address;
@@ -57,4 +56,6 @@ void estrai_segmento(char *fname, void *dest)
 		cout << endl;
 	}
 	fclose(file);
+
+	return entry_point;
 }
