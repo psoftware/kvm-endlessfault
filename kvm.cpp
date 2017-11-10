@@ -206,7 +206,7 @@ static void setup_protected_mode(int vcpu_fd , unsigned char *data_mem, uint64_t
 	}
 }
 
-extern uint32_t estrai_segmento(char *fname, void *dest);
+extern uint32_t estrai_segmento(char *fname, void *dest, uint64_t dest_offset);
 int main(int argc, char **argv)
 {
 	// controllo parametri in ingresso
@@ -262,7 +262,7 @@ int main(int argc, char **argv)
 	 */
 
 	// carichiamo l'eseguibile da file
-	uint32_t entry_point = estrai_segmento(elf_file_path, (void*)code);
+	uint32_t entry_point = estrai_segmento(elf_file_path, (void*)code, USER_CODE_START);
 
 	/* This is the descriptor for the 'data' page.
 	 * We want to put this page at guest physical address 0

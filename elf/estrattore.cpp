@@ -5,7 +5,7 @@
 
 using namespace std;
 
-uint32_t estrai_segmento(char *fname, void *dest)
+uint32_t estrai_segmento(char *fname, void *dest, uint64_t dest_offset)
 {
 	FILE* file;
 	uint64_t entry_point;
@@ -43,11 +43,13 @@ uint32_t estrai_segmento(char *fname, void *dest)
 		cout << "==> seg dim " << std::dec << dimensione << " addr " << std::hex <<
 			ind_virtuale << "\n";
 
-		/*if (end_addr > last_address)
-			last_address = end_addr;
+		// ==== DA SISTEMARE
+		if(ind_virtuale < dest_offset)
+			continue;
+		if(end_addr > 0xffffffff)
+			continue;
+		// ====
 
-		ind_virtuale &= 0xfffffffffffff000;
-		end_addr = (end_addr + 0x0000000000000fff) & 0xfffffffffffff000;*/
 		cout << "byte copiati in m1 " << std::dec << s->copia_segmento(dest) << endl;
 
 		for(int i=0; i<dimensione; i++){
