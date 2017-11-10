@@ -5,7 +5,7 @@
 
 using namespace std;
 
-uint32_t estrai_segmento(char *fname, void *dest, uint64_t dest_offset)
+uint32_t estrai_segmento(char *fname, void *dest, uint64_t dest_size)
 {
 	FILE* file;
 	uint64_t entry_point;
@@ -43,16 +43,17 @@ uint32_t estrai_segmento(char *fname, void *dest, uint64_t dest_offset)
 		cout << "==> seg dim " << std::dec << dimensione << " addr " << std::hex <<
 			ind_virtuale << "\n";
 
-		// ==== DA SISTEMARE
-		if(ind_virtuale < dest_offset)
+		// ==== DA VALUTARE SE VA BENE
+		if(end_addr > dest_size)
+		{
+			cout << "il segmento è troppo grande per essere caricato o sfora i limiti della memoria fisica" << endl;
 			continue;
-		if(end_addr > 0xffffffff)
-			continue;
+		}
 		// ====
 
-		cout << "byte copiati in m1 " << std::dec << s->copia_segmento(dest) << endl;
+		cout << "byte copiati in m1 " << std::dec << s->copia_segmento((uint8_t*)dest + ind_virtuale) << endl;
 
-		for(int i=0; i<dimensione; i++){
+		for(int i=ind_virtuale; i<ind_virtuale+dimensione; i++){
 			printf("%x",((unsigned char*)dest)[i]);
 		}
 		cout << endl;

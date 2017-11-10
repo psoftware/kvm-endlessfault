@@ -31,39 +31,9 @@ using namespace std;
  */
 #include <linux/kvm.h>
 
-/* this is the code that we want to execute. The machine starts
- * in "real mode", so this is 16 bit code. Note the use of 16 bits
- * registers (%bp, %ax, ...); moreover, the stack items inserted or
- * removed by push, pop, call and ret are all 2-bytes wide.
- *
- * This array will become one of the two pages comprising the
- * physical memory of the virtual machine; hence, it is page-sized
- * and page-aligned. The alignment is given by the strange looking
- * "__attribute__ ((...))" syntax, which is a gcc extension.
- */
-
-/*unsigned char code[4096] __attribute__ ((aligned(4096))) = {
-	0xb0, 0x60,								// mov		$0x60,%al
-	0xe6, 0x64,								// out		%al,$0x64
-	0xe6, 0x60,								// out		%al,$0x60
-
-//wait_char:
-	0xe4, 0x64,								// in		$0x64,%al
-	0xa8, 0x01,								// test		$0x1,%al
-	0x74, 0xfa,								// je		6 <wait_char>
-	0xe4, 0x60,								// in		$0x60,%al
-	0xf4,									// hlt		(diciamo al vm monitor di prelevare il risultato)
-	0xeb, 0xf5,								// jmp		6 <wait_char>
-};*/
-
-const uint32_t USER_CODE_START = 0xfffff000;
-
-unsigned char code[4096] __attribute__ ((aligned(4096)));
-
-/* the following array will become the other page of memory for the
- * machine. The code above uses it to contain the stack.
- */
-unsigned char data[4096] __attribute__ ((aligned(4096)));
+// memoria del guest
+const uint32_t GUEST_PHYSICAL_MEMORY_SIZE = 8*1024*1024; // Memoria Fisica del guest a 2MB
+unsigned char guest_physical_memory[GUEST_PHYSICAL_MEMORY_SIZE] __attribute__ ((aligned(4096)));
 
 // tastiera emulata (frontend)
 keyboard keyb;
@@ -206,7 +176,7 @@ static void setup_protected_mode(int vcpu_fd , unsigned char *data_mem, uint64_t
 	}
 }
 
-extern uint32_t estrai_segmento(char *fname, void *dest, uint64_t dest_offset);
+extern uint32_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 int main(int argc, char **argv)
 {
 	// controllo parametri in ingresso
@@ -261,24 +231,14 @@ int main(int argc, char **argv)
 	 * obvious.
 	 */
 
-	// carichiamo l'eseguibile da file
-	uint32_t entry_point = estrai_segmento(elf_file_path, (void*)code, USER_CODE_START);
-
-	/* This is the descriptor for the 'data' page.
-	 * We want to put this page at guest physical address 0
-	 */
 	kvm_userspace_memory_region mrd = {
 		0,					// slot
 		0,					// no flags,
 		0,					// guest physical addr
-		4096,					// memory size
-		reinterpret_cast<__u64>(data)		// userspace addr
+		GUEST_PHYSICAL_MEMORY_SIZE,					// memory size
+		reinterpret_cast<__u64>(guest_physical_memory)		// userspace addr
 	};
-	/* now we can add the memory to the vm */
-	if (ioctl(vm_fd, KVM_SET_USER_MEMORY_REGION, &mrd) < 0) {
-		cerr << "set memory (data): " << strerror(errno) << endl;
-		return 1;
-	}
+
 	/* note that the memory is shared between us and the vm.
 	 * Whatever we write in the 'data' array above will be seen
 	 * by the vm and, vice-versa, whatever the vm writes
@@ -287,22 +247,14 @@ int main(int argc, char **argv)
 	 * use several threads.
 	 */
 
-	/* now we add the other page of memory, the one with the code.
-	 * The reason for the strange guest physical address is explained
-	 * below.
-	 */
-	kvm_userspace_memory_region mrc = {
-		1,					// slot
-		0,					// no flags,
-		USER_CODE_START,				// guest physical addr
-		4096,					// memory size
-		reinterpret_cast<__u64>(code)		// userspace addr
-	};
-
-	if (ioctl(vm_fd, KVM_SET_USER_MEMORY_REGION, &mrc) < 0) {
-		cerr << "set memory (code): " << strerror(errno) << endl;
+	/* now we can add the memory to the vm */
+	if (ioctl(vm_fd, KVM_SET_USER_MEMORY_REGION, &mrd) < 0) {
+		cerr << "set memory (data): " << strerror(errno) << endl;
 		return 1;
 	}
+
+	// carichiamo l'eseguibile da file
+	uint32_t entry_point = estrai_segmento(elf_file_path, (void*)guest_physical_memory, GUEST_PHYSICAL_MEMORY_SIZE);
 
 	/* now we add a virtual cpu (vcpu) to our machine. We obtain yet
 	 * another open file descriptor, which we can use to
@@ -356,12 +308,12 @@ int main(int argc, char **argv)
 	initIO();
 
 	cout << endl << "================== Memory Dump ==================" << endl;
-	for(int i=0; i<4096; i++)
-		printf("%x",((unsigned char*)code)[i]);
+	for(int i=0x200200; i<0x200200+4096; i++)
+		printf("%x",((unsigned char*)guest_physical_memory)[i]);
 	cout << endl << "=================================================" << endl;
 
 	//passiamo alla modalità protetta
-	setup_protected_mode(vcpu_fd, data, entry_point);
+	setup_protected_mode(vcpu_fd, guest_physical_memory, entry_point);
 
 	/* we are finally ready to start the machine, by issuing
 	 * the KVM_RUN ioctl() on the vcpu_fd. While the machine
