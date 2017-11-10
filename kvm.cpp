@@ -307,8 +307,8 @@ int main(int argc, char **argv)
 	// a questo punto possiamo inizializzare le strutture per l'emulazione dei dispositivi di IO
 	initIO();
 
-	cout << endl << "================== Memory Dump ==================" << endl;
-	for(int i=0x200200; i<0x200200+4096; i++)
+	cout << endl << "================== Memory Dump (0x1000 4KB) ==================" << endl;
+	for(int i=0x10000; i<0x10000+4096; i++)
 		printf("%x",((unsigned char*)guest_physical_memory)[i]);
 	cout << endl << "=================================================" << endl;
 
