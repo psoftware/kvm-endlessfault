@@ -15,8 +15,8 @@ ELF_OBJ_FILES = elf/elf32.o elf/elf64.o elf/estrattore.o elf/interp.o
 
 all: kvm build/caric build/prog_prova build/keyboard_program
 
-kvm: kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
-	g++ kvm.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) -o kvm $(LD_FLAGS)
+kvm: kvm.o boot.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
+	g++ kvm.o boot.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) -o kvm $(LD_FLAGS)
 
 build/caric: $(ELF_OBJ_FILES) elf/main.o
 	g++ $(ELF_OBJ_FILES) elf/main.o -o build/caric $(LD_FLAGS)
@@ -31,6 +31,9 @@ build/keyboard_program: elf/keyboard_program.s
 
 kvm.o: kvm.cpp
 	g++ -c kvm.cpp -o kvm.o $(COMM_CFLAGS)
+
+boot.o: boot.cpp boot.h
+	g++ -c boot.cpp -o boot.o $(COMM_CFLAGS)
 
 frontend/%.o: frontend/%.cpp frontend/%.h
 	g++ -c -o $@ $< $(COMM_CFLAGS)

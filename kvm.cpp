@@ -1,4 +1,3 @@
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
@@ -10,6 +9,7 @@
 #include "frontend/IODevice.h"
 #include "frontend/keyboard.h"
 #include "backend/ConsoleInput.h"
+#include "boot.h"
 
 using namespace std;
 
@@ -75,7 +75,6 @@ void fetch_application_result(int vcpu_fd, kvm_run *kr) {
 	 * obtain the 'special registers' with KVM_GET_SREGS).
 	 */
 
-	// dobbiamo leggere al, quindi eliminiamo la parte restante da rax
 	cout << "Risultato programma (keycode): " << regs.rax << endl;
 }
 
@@ -88,93 +87,6 @@ void trace_user_program(int vcpu_fd, kvm_run *kr) {
 
 	printf("RIP: %x\n", (unsigned int)regs.rip);
 	printf("RSP: %x\n", (unsigned int)regs.rsp);
-}
-
-/* CR0 bits */
-#define CR0_PE 1
-#define CR0_MP (1 << 1)
-#define CR0_EM (1 << 2)
-#define CR0_TS (1 << 3)
-#define CR0_ET (1 << 4)
-#define CR0_NE (1 << 5)
-#define CR0_WP (1 << 16)
-#define CR0_AM (1 << 18)
-#define CR0_NW (1 << 29)
-#define CR0_CD (1 << 30)
-#define CR0_PG (1 << 31)
-
-void fill_segment_descriptor(uint64_t *dt, struct kvm_segment *seg)
-{
-	uint16_t index = seg->selector >> 3;
-	uint32_t limit = seg->g ? seg->limit >> 12 : seg->limit;
-	dt[index] = (limit & 0xffff) /* Limit bits 0:15 */
-		| (seg->base & 0xffffff) << 16 /* Base bits 0:23 */
-		| (uint64_t)seg->type << 40
-		| (uint64_t)seg->s << 44 /* system or code/data */
-		| (uint64_t)seg->dpl << 45 /* Privilege level */
-		| (uint64_t)seg->present << 47
-		| (limit & 0xf0000ULL) << 48 /* Limit bits 16:19 */
-		| (uint64_t)seg->avl << 52 /* Available for system software */
-		| (uint64_t)seg->l << 53 /* 64-bit code segment */
-		| (uint64_t)seg->db << 54 /* 16/32-bit segment */
-		| (uint64_t)seg->g << 55 /* 4KB granularity */
-		| (seg->base & 0xff000000ULL) << 56; /* Base bits 24:31 */
-}
-
-static void setup_protected_mode(int vcpu_fd , unsigned char *data_mem, uint64_t entry_point)
-{
-	kvm_sregs sregs;
-	if (ioctl(vcpu_fd, KVM_GET_SREGS, &sregs) < 0) {
-		perror("KVM_GET_SREGS:");
-		exit(1);
-	}
-
-	kvm_segment seg;
-	seg.base = 0;
-	seg.limit = 0xffffffff;
-	seg.present = 1;
-	seg.dpl = 0;
-	seg.db = 1;
-	seg.s = 1; /* Code/data */
-	seg.l = 0;
-	seg.g = 1; /* 4KB granularity */
-
-	uint64_t *gdt;
-
-	sregs.cr0 |= CR0_PE; /* enter protected mode */
-	sregs.gdt.base = 0x1000;
-	sregs.gdt.limit = 3 * 8 - 1;
-
-	gdt = (uint64_t *)(data_mem + sregs.gdt.base);
-	/* gdt[0] is the null segment */
-
-	seg.type = 11; /* Code: execute, read, accessed */
-	seg.selector = 1 << 3;
-	fill_segment_descriptor(gdt, &seg);
-	sregs.cs = seg;
-
-	seg.type = 3; /* Data: read/write, accessed */
-	seg.selector = 2 << 3;
-	fill_segment_descriptor(gdt, &seg);
-	sregs.ds = sregs.es = sregs.fs = sregs.gs
-		= sregs.ss = seg;
-
-	if (ioctl(vcpu_fd, KVM_SET_SREGS, &sregs) < 0) {
-		perror("KVM_SET_SREGS:");
-		exit(1);
-	}
-
-	/* Clear all FLAGS bits, except bit 1 which is always set. */
-	kvm_regs regs;
-	memset(&regs, 0, sizeof(regs));
-
-	regs.rflags = 2;
-	regs.rip = entry_point;
-
-	if (ioctl(vcpu_fd, KVM_SET_REGS, &regs) < 0) {
-		perror("KVM_SET_REGS: ");
-		exit(1);
-	}
 }
 
 extern uint32_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
