@@ -1,4 +1,5 @@
 #include "vgaController.h"
+#include <iostream>
 
 using namespace std;
 
