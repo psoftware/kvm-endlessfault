@@ -127,3 +127,55 @@ void setup_protected_mode(int vcpu_fd , unsigned char *data_mem, uint64_t entry_
 		exit(1);
 	}
 }
+
+void setup_64bit_code_segment(unsigned char *data_mem, struct kvm_sregs *sregs)
+{
+	kvm_segment seg;
+	seg.base = 0;
+	seg.limit = 0xffffffff;
+	seg.selector = 3 << 3;
+	seg.present = 1;
+	seg.type = 11; /* Code: execute, read, accessed */
+	seg.dpl = 0;
+	seg.db = 0;
+	seg.s = 1; /* Code/data */
+	seg.l = 1;
+	seg.g = 1; /* 4KB granularity */
+	uint64_t *gdt = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(data_mem) + sregs->gdt.base);
+
+	sregs->gdt.limit = 4 * 8 - 1;
+
+	fill_segment_descriptor(gdt, &seg);
+}
+
+void setup_long_mode(int vcpu_fd , unsigned char *data_mem)
+{
+	kvm_sregs sregs;
+	if (ioctl(vcpu_fd, KVM_GET_SREGS, &sregs) < 0) {
+		perror("KVM_GET_SREGS:");
+		exit(1);
+	}
+
+	uint64_t pml4_addr = 0x2000;
+	uint64_t *pml4 = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(data_mem) + pml4_addr);
+
+	uint64_t pdpt_addr = 0x3000;
+	uint64_t *pdpt = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(data_mem) + pdpt_addr);
+
+	uint64_t pd_addr = 0x4000;
+	uint64_t *pd = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(data_mem) + pd_addr);
+
+	pml4[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | pdpt_addr;
+	pdpt[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | pd_addr;
+	pd[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS;
+
+	sregs.cr3 = pml4_addr;
+	sregs.cr4 = CR4_PAE;
+	sregs.cr0 = CR0_PE | CR0_MP | CR0_ET | CR0_NE | CR0_WP | CR0_AM;
+	sregs.efer = EFER_LME;
+
+	/* We don't set cr0.pg here, because that causes a vm entry
+	   failure. It's not clear why. Instead, we set it in the VM
+	   code. */
+	setup_64bit_code_segment(data_mem, &sregs);
+}
