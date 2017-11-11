@@ -12,5 +12,5 @@
 
 void fill_segment_descriptor(uint64_t *dt, struct kvm_segment *seg);
 void setup_protected_mode(int vcpu_fd , unsigned char *data_mem, uint64_t entry_point);
-
+void setup_long_mode(int vcpu_fd , unsigned char *data_mem);
 #endif

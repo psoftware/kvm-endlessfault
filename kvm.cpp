@@ -241,6 +241,8 @@ int main(int argc, char **argv)
 
 	//passiamo alla modalità protetta
 	setup_protected_mode(vcpu_fd, guest_physical_memory, entry_point);
+	//possiamo in modalità long mode
+	setup_long_mode(vcpu_fd, guest_physical_memory);
 
 	/* we are finally ready to start the machine, by issuing
 	 * the KVM_RUN ioctl() on the vcpu_fd. While the machine
