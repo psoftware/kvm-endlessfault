@@ -34,6 +34,7 @@ using namespace std;
 // memoria del guest
 const uint32_t GUEST_PHYSICAL_MEMORY_SIZE = 8*1024*1024; // Memoria Fisica del guest a 2MB
 unsigned char guest_physical_memory[GUEST_PHYSICAL_MEMORY_SIZE] __attribute__ ((aligned(4096)));
+unsigned char dumb_stack_memory[4096] __attribute__ ((aligned(4096)));
 
 // tastiera emulata (frontend)
 keyboard keyb;
@@ -249,7 +250,21 @@ int main(int argc, char **argv)
 
 	/* now we can add the memory to the vm */
 	if (ioctl(vm_fd, KVM_SET_USER_MEMORY_REGION, &mrd) < 0) {
-		cerr << "set memory (data): " << strerror(errno) << endl;
+		cerr << "set memory (guest_physical_memory): " << strerror(errno) << endl;
+		return 1;
+	}
+
+	kvm_userspace_memory_region mrd2 = {
+		1,					// slot
+		0,					// no flags,
+		0xfffff000,					// guest physical addr
+		4096,					// memory size
+		reinterpret_cast<__u64>(dumb_stack_memory)		// userspace addr
+	};
+
+	/* now we can add the memory to the vm */
+	if (ioctl(vm_fd, KVM_SET_USER_MEMORY_REGION, &mrd2) < 0) {
+		cerr << "set memory (dumb_stack_memory): " << strerror(errno) << endl;
 		return 1;
 	}
 
