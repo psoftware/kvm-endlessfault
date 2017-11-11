@@ -85,8 +85,8 @@ void trace_user_program(int vcpu_fd, kvm_run *kr) {
 		return;
 	}
 
-	printf("RIP: %x\n", (unsigned int)regs.rip);
-	printf("RSP: %x\n", (unsigned int)regs.rsp);
+	printf("\tRIP: %p\n", (void *)regs.rip);
+	printf("\tRSP: %p\n", (void *)regs.rsp);
 }
 
 extern uint32_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
