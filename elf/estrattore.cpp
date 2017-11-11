@@ -5,7 +5,7 @@
 
 using namespace std;
 
-uint32_t estrai_segmento(char *fname, void *dest, uint64_t dest_size)
+uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size)
 {
 	FILE* file;
 	uint64_t entry_point;

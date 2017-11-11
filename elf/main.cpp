@@ -1,7 +1,7 @@
 #include <iostream>
 using namespace std;
 
-extern unsigned int estrai_segmento(char *fname, void *dest, unsigned long dest_size);
+extern unsigned long estrai_segmento(char *fname, void *dest, unsigned long dest_size);
 #define DIM 20000
 
 unsigned char mem1[DIM];

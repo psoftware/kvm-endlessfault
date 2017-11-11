@@ -89,7 +89,7 @@ void trace_user_program(int vcpu_fd, kvm_run *kr) {
 	printf("\tRSP: %p\n", (void *)regs.rsp);
 }
 
-extern uint32_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
+extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 int main(int argc, char **argv)
 {
 	// controllo parametri in ingresso
@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 	}
 
 	// carichiamo l'eseguibile da file
-	uint32_t entry_point = estrai_segmento(elf_file_path, (void*)guest_physical_memory, GUEST_PHYSICAL_MEMORY_SIZE);
+	uint64_t entry_point = estrai_segmento(elf_file_path, (void*)guest_physical_memory, GUEST_PHYSICAL_MEMORY_SIZE);
 
 	/* now we add a virtual cpu (vcpu) to our machine. We obtain yet
 	 * another open file descriptor, which we can use to
