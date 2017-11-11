@@ -301,6 +301,9 @@ int main(int argc, char **argv)
 				trace_user_program(vcpu_fd, kr);
 				//return 1;
 				break;
+			case KVM_EXIT_SHUTDOWN:
+				cerr << "kvm: TRIPLE FAULT. Shutting down" << endl;
+				return 1;
 			case KVM_EXIT_FAIL_ENTRY:
 				cerr << "kvm: KVM_EXIT_FAIL_ENTRY reason=" << (unsigned long long)kr->fail_entry.hardware_entry_failure_reason << endl;
 				trace_user_program(vcpu_fd, kr);
