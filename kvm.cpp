@@ -234,8 +234,8 @@ int main(int argc, char **argv)
 	// a questo punto possiamo inizializzare le strutture per l'emulazione dei dispositivi di IO
 	initIO();
 
-	cout << endl << "================== Memory Dump (0x1000 4KB) ==================" << endl;
-	for(int i=0x10000; i<0x10000+4096; i++)
+	cout << endl << "================== Memory Dump (0x100000 4KB) ==================" << endl;
+	for(int i=0x100000; i<0x100000+4096; i++)
 		printf("%x",((unsigned char*)guest_physical_memory)[i]);
 	cout << endl << "=================================================" << endl;
 
@@ -291,13 +291,13 @@ int main(int argc, char **argv)
 				break;
 			}
 			case KVM_EXIT_MMIO:
-				cerr << "kvm: KVM_EXIT_MMIO"
+				cerr << "kvm: unhandled KVM_EXIT_MMIO"
 						<< " address=" << std::hex << (uint64_t)kr->mmio.phys_addr
 						<< " len=" << (uint32_t)kr->mmio.len
 						<< " data=" << (uint32_t)((kr->mmio.data[3] << 24) | (kr->mmio.data[2] << 16) | (kr->mmio.data[1] << 8) | kr->mmio.data[0])
 						<< " is_write=" << (short)kr->mmio.is_write << endl;
 				trace_user_program(vcpu_fd, kr);
-				return 1;
+				//return 1;
 				break;
 			case KVM_EXIT_FAIL_ENTRY:
 				cerr << "kvm: KVM_EXIT_FAIL_ENTRY reason=" << (unsigned long long)kr->fail_entry.hardware_entry_failure_reason << endl;
