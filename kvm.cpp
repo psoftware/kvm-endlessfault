@@ -8,6 +8,7 @@
 
 #include "frontend/IODevice.h"
 #include "frontend/keyboard.h"
+#include "backend/ConsoleLog.h"
 #include "backend/ConsoleInput.h"
 #include "boot.h"
 
@@ -35,6 +36,9 @@ using namespace std;
 const uint32_t GUEST_PHYSICAL_MEMORY_SIZE = 8*1024*1024; // Memoria Fisica del guest a 2MB
 unsigned char guest_physical_memory[GUEST_PHYSICAL_MEMORY_SIZE] __attribute__ ((aligned(4096)));
 unsigned char dumb_stack_memory[4096] __attribute__ ((aligned(4096)));
+
+// logger globale
+ConsoleLog& log = *ConsoleLog::getInstance();
 
 // tastiera emulata (frontend)
 keyboard keyb;
@@ -75,7 +79,7 @@ void fetch_application_result(int vcpu_fd, kvm_run *kr) {
 	 * obtain the 'special registers' with KVM_GET_SREGS).
 	 */
 
-	cout << "Risultato programma (keycode): " << regs.rax << endl;
+	log << "Risultato programma (keycode): " << regs.rax << endl;
 }
 
 void trace_user_program(int vcpu_fd, kvm_run *kr) {
@@ -91,20 +95,20 @@ void trace_user_program(int vcpu_fd, kvm_run *kr) {
 		exit(1);
 	}
 
-	printf("Target program dump: \n");
-	printf("\tRIP: %p\n", (void *)regs.rip);
-	printf("\tRSP: %p\n", (void *)regs.rsp);
-	printf("\tCR3: %p\n", (void *)sregs.cr3);
-	printf("\tCR2: %p\n", (void *)sregs.cr2);
-	printf("\tCR0: %p\n", (void *)sregs.cr0);
+	log << "Target program dump: " << endl;
+	log << "\tRIP: " << (void *)regs.rip << endl;
+	log << "\tRSP: " << (void *)regs.rsp << endl;
+	log << "\tCR3: " << (void *)sregs.cr3 << endl;
+	log << "\tCR2: " << (void *)sregs.cr2 << endl;
+	log << "\tCR0: " << (void *)sregs.cr0 << endl;
 }
 
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 int main(int argc, char **argv)
-{
+{log << "SALVEEEEE" << endl;
 	// controllo parametri in ingresso
 	if(argc != 2) {
-		cout << "Formato non corretto. Uso: kvm <elf file>" << endl;
+		log << "Formato non corretto. Uso: kvm <elf file>" << endl;
 		return 1;
 	}
 
@@ -112,7 +116,7 @@ int main(int argc, char **argv)
 	char *elf_file_path = argv[1];
 	FILE *elf_file = fopen(elf_file_path, "r");
 	if(!elf_file) {
-		cout << "Il file selezionato non esiste" << endl;
+		log << "Il file selezionato non esiste" << endl;
 		return 1;
 	}
 	fclose(elf_file);
@@ -123,7 +127,7 @@ int main(int argc, char **argv)
 	int kvm_fd = open("/dev/kvm", O_RDWR);
 	if (kvm_fd < 0) {
 		/* as usual, a negative value means error */
-		cerr << "/dev/kvm: " << strerror(errno) << endl;
+		log << "/dev/kvm: " << strerror(errno) << endl;
 		return 1;
 	}
 
@@ -135,7 +139,7 @@ int main(int argc, char **argv)
 	 */
 	int vm_fd = ioctl(kvm_fd, KVM_CREATE_VM, 0);
 	if (vm_fd < 0) {
-		cerr << "create vm: " << strerror(errno) << endl;
+		log << "create vm: " << strerror(errno) << endl;
 		return 1;
 	}
 
@@ -172,7 +176,7 @@ int main(int argc, char **argv)
 
 	/* now we can add the memory to the vm */
 	if (ioctl(vm_fd, KVM_SET_USER_MEMORY_REGION, &mrd) < 0) {
-		cerr << "set memory (guest_physical_memory): " << strerror(errno) << endl;
+		log << "set memory (guest_physical_memory): " << strerror(errno) << endl;
 		return 1;
 	}
 
@@ -186,7 +190,7 @@ int main(int argc, char **argv)
 
 	/* now we can add the memory to the vm */
 	if (ioctl(vm_fd, KVM_SET_USER_MEMORY_REGION, &mrd2) < 0) {
-		cerr << "set memory (dumb_stack_memory): " << strerror(errno) << endl;
+		log << "set memory (dumb_stack_memory): " << strerror(errno) << endl;
 		return 1;
 	}
 
@@ -200,7 +204,7 @@ int main(int argc, char **argv)
 	 */
 	int vcpu_fd = ioctl(vm_fd, KVM_CREATE_VCPU, 0);
 	if (vcpu_fd < 0) {
-		cerr << "create vcpu: " << strerror(errno) << endl;
+		log << "create vcpu: " << strerror(errno) << endl;
 		return 1;
 	}
 
@@ -215,7 +219,7 @@ int main(int argc, char **argv)
 	 */
 	long mmap_size = ioctl(kvm_fd, KVM_GET_VCPU_MMAP_SIZE, 0);
 	if (mmap_size < 0) {
-		cerr << "get mmap size: " << strerror(errno) << endl;
+		log << "get mmap size: " << strerror(errno) << endl;
 		return 1;
 	}
 
@@ -237,17 +241,17 @@ int main(int argc, char **argv)
 			0
 		));
 	if (kr == MAP_FAILED) {
-		cerr << "mmap: " << strerror(errno) << endl;
+		log << "mmap: " << strerror(errno) << endl;
 		return 1;
 	}
 
 	// a questo punto possiamo inizializzare le strutture per l'emulazione dei dispositivi di IO
 	initIO();
 
-	cout << endl << "================== Memory Dump (0x100000 4KB) ==================" << endl;
+	log << endl << "================== Memory Dump (0x100000 4KB) ==================" << endl;
 	for(int i=0x100000; i<0x100000+4096; i++)
-		printf("%x",((unsigned char*)guest_physical_memory)[i]);
-	cout << endl << "=================================================" << endl;
+		log << std::hex << (unsigned int)((unsigned char*)guest_physical_memory)[i];
+	log << endl << "=================================================" << endl;
 
 	//passiamo alla modalità protetta
 	setup_protected_mode(vcpu_fd, guest_physical_memory, entry_point);
@@ -267,7 +271,7 @@ int main(int argc, char **argv)
 	while(continue_run)
 	{
 		if (ioctl(vcpu_fd, KVM_RUN, 0) < 0) {
-			cerr << "run: " << strerror(errno) << endl;
+			log << "run: " << strerror(errno) << endl;
 			return 1;
 		}
 
@@ -293,17 +297,18 @@ int main(int argc, char **argv)
 				else if (kr->io.size == 1 && kr->io.count == 1 && kr->io.port == 0x02F8 && kr->io.direction == KVM_EXIT_IO_OUT)
 				{
 					// usato per debuggare i programmi
-					printf("kvm: Risultato su Porta parallela: %d\n", *io_param);
+					log << "kvm: Risultato su Porta parallela: " << std::hex << (unsigned int)*io_param << endl;
 				}
 				else
 				{
-					cerr << "kvm: Unhandled VM IO: " <<  ((kr->io.direction == KVM_EXIT_IO_IN)?"IN":"OUT") << " on kr->io.port " << kr->io.port << endl;
+					log << "kvm: Unhandled VM IO: " <<  ((kr->io.direction == KVM_EXIT_IO_IN)?"IN":"OUT")
+						<< " on kr->io.port " << std::hex << (unsigned int)kr->io.port << endl;
 					break;
 				}
 				break;
 			}
 			case KVM_EXIT_MMIO:
-				cerr << "kvm: unhandled KVM_EXIT_MMIO"
+				log << "kvm: unhandled KVM_EXIT_MMIO"
 						<< " address=" << std::hex << (uint64_t)kr->mmio.phys_addr
 						<< " len=" << (uint32_t)kr->mmio.len
 						<< " data=" << (uint32_t)((kr->mmio.data[3] << 24) | (kr->mmio.data[2] << 16) | (kr->mmio.data[1] << 8) | kr->mmio.data[0])
@@ -312,21 +317,21 @@ int main(int argc, char **argv)
 				//return 1;
 				break;
 			case KVM_EXIT_SHUTDOWN:
-				cerr << "kvm: TRIPLE FAULT. Shutting down" << endl;
+				log << "kvm: TRIPLE FAULT. Shutting down" << endl;
 				trace_user_program(vcpu_fd, kr);
 				return 1;
 			case KVM_EXIT_FAIL_ENTRY:
-				cerr << "kvm: KVM_EXIT_FAIL_ENTRY reason=" << (unsigned long long)kr->fail_entry.hardware_entry_failure_reason << endl;
+				log << "kvm: KVM_EXIT_FAIL_ENTRY reason=" << std::dec << (unsigned long long)kr->fail_entry.hardware_entry_failure_reason << endl;
 				trace_user_program(vcpu_fd, kr);
 				return 1;
 				break;
 			case KVM_EXIT_INTERNAL_ERROR:
-				cerr << "kvm: KVM_EXIT_INTERNAL_ERROR suberror=" << kr->internal.suberror << endl;
+				log << "kvm: KVM_EXIT_INTERNAL_ERROR suberror=" << std::dec <<kr->internal.suberror << endl;
 				trace_user_program(vcpu_fd, kr);
 				return 1;
 				break;
 			default:
-				cerr << "kvm: Unhandled VM_EXIT reason=" << kr->exit_reason << endl;
+				log << "kvm: Unhandled VM_EXIT reason=" << std::dec << kr->exit_reason << endl;
 				trace_user_program(vcpu_fd, kr);
 				return 1;
 		}

@@ -2,3 +2,4 @@
 *~
 kvm
 build/
+*.log
