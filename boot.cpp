@@ -81,6 +81,7 @@ void setup_protected_mode(int vcpu_fd , unsigned char *data_mem, uint64_t entry_
 	}
 
 	kvm_segment seg;
+	memset(&seg, 0, sizeof(seg));
 	seg.base = 0;
 	seg.limit = 0xffffffff;
 	seg.present = 1;
@@ -98,7 +99,6 @@ void setup_protected_mode(int vcpu_fd , unsigned char *data_mem, uint64_t entry_
 
 	gdt = (uint64_t *)(data_mem + sregs.gdt.base);
 	/* gdt[0] is the null segment */
-
 	seg.type = 11; /* Code: execute, read, accessed */
 	seg.selector = 1 << 3;
 	fill_segment_descriptor(gdt, &seg);
@@ -131,6 +131,7 @@ void setup_protected_mode(int vcpu_fd , unsigned char *data_mem, uint64_t entry_
 void setup_64bit_code_segment(unsigned char *data_mem, struct kvm_sregs *sregs)
 {
 	kvm_segment seg;
+	memset(&seg, 0, sizeof(seg));
 	seg.base = 0;
 	seg.limit = 0xffffffff;
 	seg.selector = 3 << 3;
