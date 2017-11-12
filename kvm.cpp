@@ -98,9 +98,24 @@ void trace_user_program(int vcpu_fd, kvm_run *kr) {
 	log << "Target program dump: " << endl;
 	log << "\tRIP: " << (void *)regs.rip << endl;
 	log << "\tRSP: " << (void *)regs.rsp << endl;
+	log << "\tCR4: " << (void *)sregs.cr4 << endl;
 	log << "\tCR3: " << (void *)sregs.cr3 << endl;
 	log << "\tCR2: " << (void *)sregs.cr2 << endl;
 	log << "\tCR0: " << (void *)sregs.cr0 << endl;
+	log << "\tEFER: " << (void *)sregs.efer << endl;
+
+	log << "\tSREGS base: " << (unsigned int)sregs.ds.base << endl;
+	log << "\tSREGS limit: " << (unsigned int)sregs.ds.limit << endl;
+	log << "\tSREGS selector: " << (unsigned int)sregs.ds.selector << endl;
+	log << "\tSREGS present: " << (unsigned int)sregs.ds.present << endl;
+	log << "\tSREGS type: " << (unsigned int)sregs.ds.type << endl;
+	log << "\tSREGS dpl: " << (unsigned int)sregs.ds.dpl << endl;
+	log << "\tSREGS db: " << (unsigned int)sregs.ds.db << endl;
+	log << "\tSREGS s: " << (unsigned int)sregs.ds.s << endl;
+	log << "\tSREGS l: " << (unsigned int)sregs.ds.l << endl;
+	log << "\tSREGS g: " << (unsigned int)sregs.ds.g << endl;
+	log << "\tSREGS type: " << (unsigned int)sregs.ds.type << endl;
+	log << "\tSREGS selector: " << (unsigned int)sregs.ds.selector << endl;
 }
 
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
