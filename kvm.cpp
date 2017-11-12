@@ -107,10 +107,16 @@ extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 int main(int argc, char **argv)
 {
 	// controllo parametri in ingresso
-	if(argc != 2) {
-		cout << "Formato non corretto. Uso: kvm <elf file>" << endl;
+	if(argc != 2 && (argc ==1 || argc == 3 || (argc == 4 && strcmp(argv[2], "-logfile"))) ) {
+		cout << "Formato non corretto. Uso: kvm <elf file> [-logfile filefifo]" << endl;
 		return 1;
 	}
+
+	// ci è stato richiesto di utilizzare un file specifico per il logging
+	if(argc == 4 && !strcmp(argv[2], "-logfile"))
+		log.setFilePath(argv[3]);
+	else
+		log.setFilePath("console.log");
 
 	// controllo validità del path
 	char *elf_file_path = argv[1];

@@ -22,6 +22,9 @@ public:
 	// seguiamo il design pattern Singleton
 	static ConsoleLog* getInstance();
 
+	// possiamo cambiare il logfile in qualsiasi momento
+	void setFilePath(const char* filepath);
+
 	// la nostra istanza si comporterà similmente ad uno stream
 	template<typename T>
 	ConsoleLog& operator << (T&& x)
