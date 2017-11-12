@@ -1,6 +1,10 @@
 #include "IODevice.h"
 #include <stdint.h>
 #include <pthread.h>
+#include "../backend/ConsoleLog.h"
+
+// logger globale
+extern ConsoleLog& log;
 
 class VGAController : public IODevice{
 

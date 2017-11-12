@@ -72,7 +72,7 @@ void fetch_application_result(int vcpu_fd, kvm_run *kr) {
 	 */
 	kvm_regs regs;
 	if (ioctl(vcpu_fd, KVM_GET_REGS, &regs) < 0) {
-		cerr << "get regs: " << strerror(errno) << endl;
+		log << "get regs: " << strerror(errno) << endl;
 		return;
 	}
 	/* (this is for the general purpose registers, we can also
@@ -85,13 +85,13 @@ void fetch_application_result(int vcpu_fd, kvm_run *kr) {
 void trace_user_program(int vcpu_fd, kvm_run *kr) {
 	kvm_regs regs;
 	if (ioctl(vcpu_fd, KVM_GET_REGS, &regs) < 0) {
-		cerr << "trace_user_program KVM_GET_REGS error: " << strerror(errno) << endl;
+		log << "trace_user_program KVM_GET_REGS error: " << strerror(errno) << endl;
 		return;
 	}
 
 	kvm_sregs sregs;
 	if (ioctl(vcpu_fd, KVM_GET_SREGS, &sregs) < 0) {
-		cerr << "trace_user_program KVM_GET_SREGS error: " << strerror(errno) << endl;
+		log << "trace_user_program KVM_GET_SREGS error: " << strerror(errno) << endl;
 		exit(1);
 	}
 
@@ -105,10 +105,10 @@ void trace_user_program(int vcpu_fd, kvm_run *kr) {
 
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 int main(int argc, char **argv)
-{log << "SALVEEEEE" << endl;
+{
 	// controllo parametri in ingresso
 	if(argc != 2) {
-		log << "Formato non corretto. Uso: kvm <elf file>" << endl;
+		cout << "Formato non corretto. Uso: kvm <elf file>" << endl;
 		return 1;
 	}
 
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
 	char *elf_file_path = argv[1];
 	FILE *elf_file = fopen(elf_file_path, "r");
 	if(!elf_file) {
-		log << "Il file selezionato non esiste" << endl;
+		cout << "Il file selezionato non esiste" << endl;
 		return 1;
 	}
 	fclose(elf_file);
@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 	int kvm_fd = open("/dev/kvm", O_RDWR);
 	if (kvm_fd < 0) {
 		/* as usual, a negative value means error */
-		log << "/dev/kvm: " << strerror(errno) << endl;
+		cout << "/dev/kvm: " << strerror(errno) << endl;
 		return 1;
 	}
 
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
 	 */
 	int vm_fd = ioctl(kvm_fd, KVM_CREATE_VM, 0);
 	if (vm_fd < 0) {
-		log << "create vm: " << strerror(errno) << endl;
+		cout << "create vm: " << strerror(errno) << endl;
 		return 1;
 	}
 
@@ -176,7 +176,7 @@ int main(int argc, char **argv)
 
 	/* now we can add the memory to the vm */
 	if (ioctl(vm_fd, KVM_SET_USER_MEMORY_REGION, &mrd) < 0) {
-		log << "set memory (guest_physical_memory): " << strerror(errno) << endl;
+		cout << "set memory (guest_physical_memory): " << strerror(errno) << endl;
 		return 1;
 	}
 
@@ -190,7 +190,7 @@ int main(int argc, char **argv)
 
 	/* now we can add the memory to the vm */
 	if (ioctl(vm_fd, KVM_SET_USER_MEMORY_REGION, &mrd2) < 0) {
-		log << "set memory (dumb_stack_memory): " << strerror(errno) << endl;
+		cout << "set memory (dumb_stack_memory): " << strerror(errno) << endl;
 		return 1;
 	}
 
@@ -204,7 +204,7 @@ int main(int argc, char **argv)
 	 */
 	int vcpu_fd = ioctl(vm_fd, KVM_CREATE_VCPU, 0);
 	if (vcpu_fd < 0) {
-		log << "create vcpu: " << strerror(errno) << endl;
+		cout << "create vcpu: " << strerror(errno) << endl;
 		return 1;
 	}
 
@@ -219,7 +219,7 @@ int main(int argc, char **argv)
 	 */
 	long mmap_size = ioctl(kvm_fd, KVM_GET_VCPU_MMAP_SIZE, 0);
 	if (mmap_size < 0) {
-		log << "get mmap size: " << strerror(errno) << endl;
+		cout << "get mmap size: " << strerror(errno) << endl;
 		return 1;
 	}
 
@@ -241,7 +241,7 @@ int main(int argc, char **argv)
 			0
 		));
 	if (kr == MAP_FAILED) {
-		log << "mmap: " << strerror(errno) << endl;
+		cout << "mmap: " << strerror(errno) << endl;
 		return 1;
 	}
 

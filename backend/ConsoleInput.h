@@ -8,6 +8,10 @@
 #include "termios.h"
 #include "fcntl.h"
 #include "sys/ioctl.h"
+#include "../backend/ConsoleLog.h"
+
+// logger globale
+extern ConsoleLog& log;
 
 class ConsoleInput {
 private:

@@ -3,6 +3,10 @@
 #include <cstdio>
 #include <cstring>
 
+#include "../backend/ConsoleLog.h"
+
+extern ConsoleLog& log;
+
 using namespace std;
 
 uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size)
@@ -29,7 +33,7 @@ uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size)
 	}
 
 	entry_point = exe->entry_point();
-	cout << "entry_point:" << std::hex << entry_point << endl;
+	log << "entry_point:" << std::hex << entry_point << endl;
 
 
 	// dall'intestazione, calcoliamo l'inizio della tabella dei segmenti di programma
@@ -40,23 +44,23 @@ uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size)
 		uint64_t dimensione = s->dimensione();
 		uint64_t end_addr = ind_virtuale + dimensione;
 
-		cout << "==> seg dim " << std::dec << dimensione << " addr " << std::hex <<
+		log << "==> seg dim " << std::dec << dimensione << " addr " << std::hex <<
 			ind_virtuale << "\n";
 
 		// ==== DA VALUTARE SE VA BENE
 		if(end_addr > dest_size)
 		{
-			cout << "il segmento è troppo grande per essere caricato o sfora i limiti della memoria fisica" << endl;
+			log << "il segmento è troppo grande per essere caricato o sfora i limiti della memoria fisica" << endl;
 			continue;
 		}
 		// ====
 
-		cout << "byte copiati in m1 " << std::dec << s->copia_segmento((uint8_t*)dest + ind_virtuale) << endl;
+		log << "byte copiati in m1 " << std::dec << s->copia_segmento((uint8_t*)dest + ind_virtuale) << endl;
 
 		for(int i=ind_virtuale; i<ind_virtuale+dimensione; i++){
-			printf("%x",((unsigned char*)dest)[i]);
+			log << std::hex << (unsigned int)((unsigned char*)dest)[i];
 		}
-		cout << endl;
+		log << endl;
 	}
 	fclose(file);
 

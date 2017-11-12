@@ -8,6 +8,10 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include "../backend/ConsoleLog.h"
+
+// logger globale
+extern ConsoleLog& log;
 
 #define COLS 80
 #define ROWS 25

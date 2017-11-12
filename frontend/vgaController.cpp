@@ -36,14 +36,14 @@ void VGAController:: write_reg_byte(io_addr addr, uint8_t val){
 				break;
 
 				default:
-					cerr<<"Registro selezionato non valido"<<endl;
+					log << "VGAController: Registro selezionato non valido" << endl;
 			}
 
 		break;
 
 		default:
 
-			cerr<<"Indirizzo selezionato non valido"<<endl;
+			log << "VGAController: Indirizzo selezionato non valido" << endl;
 
 	}
 
