@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# controllo numero parametri
+if [ "$#" -ne 1 ]; then
+    echo "Parametri errati. Uso: ./run <elf file>"
+    exit
+fi
+
+# controllo file
+if [ ! -f "$1" ]; then
+	echo "File $1 non esistente"
+	exit
+fi
+
+FIFOLOGPATH="fifo.log"
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+
+# creiamo la Named Pipe
+rm -f $FIFOLOGPATH
+mkfifo $FIFOLOGPATH
+
+# avviamo il terminale in un'altra finestra, facendo eseguire kvm con il parametro
+# passato allo script e impostando il log sulla Named Pipe
+x-terminal-emulator -e "$SHELL -c \"$SCRIPTPATH/kvm $1 -logfile $FIFOLOGPATH\""
+
+# nel frattempo acquisiamo ciò che kvm scrive nella Named Pipe
+cat < $FIFOLOGPATH
