@@ -172,7 +172,7 @@ void setup_long_mode(int vcpu_fd , unsigned char *data_mem)
 
 	sregs.cr3 = pml4_addr;
 	sregs.cr4 = CR4_PAE;
-	sregs.cr0 = CR0_PE | CR0_MP | CR0_ET | CR0_NE | CR0_WP | CR0_AM;
+	sregs.cr0 = CR0_PE | CR0_MP | CR0_ET | CR0_NE | CR0_WP | CR0_AM | CR0_PG;
 	sregs.efer = EFER_LME;
 
 	/* We don't set cr0.pg here, because that causes a vm entry
