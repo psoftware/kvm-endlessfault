@@ -121,6 +121,7 @@ void setup_protected_mode(int vcpu_fd , unsigned char *data_mem, uint64_t entry_
 
 	regs.rflags = 2;
 	regs.rip = entry_point;
+	regs.rsp = 0x400000;
 
 	if (ioctl(vcpu_fd, KVM_SET_REGS, &regs) < 0) {
 		perror("KVM_SET_REGS: ");
@@ -169,6 +170,8 @@ void setup_long_mode(int vcpu_fd , unsigned char *data_mem)
 	pml4[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | pdpt_addr;
 	pdpt[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | pd_addr;
 	pd[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS;
+	pd[1] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS | (0x200000 << 12);
+	pd[2] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS | (0x400000 << 12);
 
 	sregs.cr3 = pml4_addr;
 	sregs.cr4 = CR4_PAE;
