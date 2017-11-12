@@ -9,6 +9,7 @@ BACKEND_CPP_FILES := $(wildcard backend/*.cpp)
 BACKEND_OBJ_FILES = $(patsubst backend/%.cpp,backend/%.o,$(BACKEND_CPP_FILES))
 
 ELF_OBJ_FILES = elf/elf32.o elf/elf64.o elf/estrattore.o elf/interp.o
+ELF_HEADER_FILES := $(wildcard elf/*.h)
 
 
 ## -- linking
@@ -41,7 +42,7 @@ frontend/%.o: frontend/%.cpp frontend/%.h
 backend/%.o: backend/%.cpp backend/%.h
 	g++ -c -o $@ $< $(COMM_CFLAGS)
 
-elf/%.o: elf/%.cpp elf/%.h
+elf/%.o: elf/%.cpp $(ELF_HEADER_FILES)
 	g++ -c -o $@ $< $(COMM_CFLAGS)
 
 clean:
