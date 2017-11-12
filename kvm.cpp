@@ -81,12 +81,22 @@ void fetch_application_result(int vcpu_fd, kvm_run *kr) {
 void trace_user_program(int vcpu_fd, kvm_run *kr) {
 	kvm_regs regs;
 	if (ioctl(vcpu_fd, KVM_GET_REGS, &regs) < 0) {
-		cerr << "get regs: " << strerror(errno) << endl;
+		cerr << "trace_user_program KVM_GET_REGS error: " << strerror(errno) << endl;
 		return;
 	}
 
+	kvm_sregs sregs;
+	if (ioctl(vcpu_fd, KVM_GET_SREGS, &sregs) < 0) {
+		cerr << "trace_user_program KVM_GET_SREGS error: " << strerror(errno) << endl;
+		exit(1);
+	}
+
+	printf("Target program dump: \n");
 	printf("\tRIP: %p\n", (void *)regs.rip);
 	printf("\tRSP: %p\n", (void *)regs.rsp);
+	printf("\tCR3: %p\n", (void *)sregs.cr3);
+	printf("\tCR2: %p\n", (void *)sregs.cr2);
+	printf("\tCR0: %p\n", (void *)sregs.cr0);
 }
 
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
