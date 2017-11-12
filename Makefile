@@ -21,11 +21,11 @@ kvm: kvm.o boot.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
 build/caric: $(ELF_OBJ_FILES) elf/main.o
 	g++ $(ELF_OBJ_FILES) elf/main.o -o build/caric $(LD_FLAGS)
 
-build/prog_prova: elf/prog_prova.c elf/prog_prova.s
-	gcc $(ELFPROG_CFLAGS) elf/prog_prova.c elf/prog_prova.s -o build/prog_prova
+build/prog_prova: target/prog_prova.c target/prog_prova.s
+	gcc $(ELFPROG_CFLAGS) target/prog_prova.c target/prog_prova.s -o build/prog_prova
 
-build/keyboard_program: elf/keyboard_program.s
-	gcc $(ELFPROG_CFLAGS) elf/keyboard_program.s -o build/keyboard_program
+build/keyboard_program: target/keyboard_program.s
+	gcc $(ELFPROG_CFLAGS) target/keyboard_program.s -o build/keyboard_program
 
 ## -- compilazione
 
