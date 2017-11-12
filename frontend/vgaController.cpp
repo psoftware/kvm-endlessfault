@@ -1,7 +1,5 @@
 #include "vgaController.h"
-#include <iostream>
 
-using namespace std;
 
 VGAController::VGAController() : IND(0), DAT(0), CUR_HIGH(0), CUR_LOW(0){
 
@@ -32,18 +30,18 @@ void VGAController:: write_reg_byte(io_addr addr, uint8_t val){
 				break;
 
 				case CUR_LOW_ind:
-					CUR_LOW = DAT;
+					CUR_LOW = DAT;	
 				break;
 
 				default:
-					log << "VGAController: Registro selezionato non valido" << endl;
+					cout<<"Registro selezionato non valido"<<endl;
 			}
 
 		break;
 
 		default:
 
-			log << "VGAController: Indirizzo selezionato non valido" << endl;
+			cout<<"Indirizzo selezionato non valido"<<endl;
 
 	}
 

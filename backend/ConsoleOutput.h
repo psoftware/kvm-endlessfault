@@ -8,10 +8,6 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
-#include "../backend/ConsoleLog.h"
-
-// logger globale
-extern ConsoleLog& log;
 
 #define COLS 80
 #define ROWS 25
@@ -19,6 +15,7 @@ extern ConsoleLog& log;
 #define REFRESH_TIME 0.06
 #define CLEAR "\033[2J\033[1;1H"
 #define STANDARD_BACKGROUND "\033[30;40m"
+#define CURSOR_START "\033[1;1H"
 
 using namespace std;
 
@@ -27,6 +24,7 @@ class ConsoleOutput{
 private:
 
 	pthread_t _videoThread;
+	pthread_t _cursorBlink;
 
 	//uint16_t* _videoMatrix;
 	uint16_t _videoMatrix[ROWS*COLS];
@@ -40,6 +38,7 @@ private:
 	uint16_t _min(uint16_t one, uint16_t two){ return (one<two)? one:two; }
 
 	static void* _mainThread(void *This_par);
+	static void* _blinkThread(void* param);
 	
 	string _getBackgroundColor(uint32_t code);
 	string _getTextColor(uint32_t code);

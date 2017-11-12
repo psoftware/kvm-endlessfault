@@ -1,10 +1,9 @@
 #include "IODevice.h"
 #include <stdint.h>
 #include <pthread.h>
-#include "../backend/ConsoleLog.h"
+#include <iostream>
 
-// logger globale
-extern ConsoleLog& log;
+using namespace std;
 
 class VGAController : public IODevice{
 

@@ -12,6 +12,9 @@
 #include "backend/ConsoleInput.h"
 #include "boot.h"
 
+#include "backend/ConsoleOutput.h"
+#include "frontend/vgaController.h"
+
 using namespace std;
 
 /* We are going to use the linux kvm API to crate a simple
@@ -46,6 +49,9 @@ keyboard keyb;
 // gestione input console (backend)
 ConsoleInput* console;
 
+ConsoleOutput* co;
+VGAController vga;
+
 void initIO()
 {
 	// colleghiamo la tastiera emulata all'input della console
@@ -54,6 +60,9 @@ void initIO()
 
 	// avviamo il thread che si occuperà di gestire l'input della console
 	console->startEventThread();
+
+//	co = ConsoleOutput::getInstance();
+//	co->startThread();
 }
 
 void endIO()

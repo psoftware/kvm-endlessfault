@@ -36,21 +36,23 @@ ConsoleOutput* ConsoleOutput::getInstance()
 
 bool ConsoleOutput::startThread() {
 
-	if(_videoThread != 0 )
+	if(_videoThread != 0 || _cursorBlink != 0)
 		return false;
 
 
 	pthread_create(&_videoThread, NULL, ConsoleOutput::_mainThread, this);
+	pthread_create(&_cursorBlink, NULL, ConsoleOutput::_blinkThread, NULL);
 
 }
 
 void* ConsoleOutput::_mainThread(void *This_par){
 
 	ConsoleOutput* This = (ConsoleOutput*)This_par;
+	cout<<CLEAR<<endl;
 
 	while(true){
 
-		cout<<CLEAR<<endl;
+		cout<<CURSOR_START<<endl;
 		winsize ws;
         ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
 
@@ -77,6 +79,14 @@ void* ConsoleOutput::_mainThread(void *This_par){
 		sleep(REFRESH_TIME);
 
 	}
+
+
+}
+
+
+void* ConsoleOutput::_blinkThread(void *param){
+
+
 
 
 }
