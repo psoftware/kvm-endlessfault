@@ -1,3 +1,6 @@
+#ifndef CONSOLEOUTPUT_H
+#define CONSOLEOUTPUT_H
+
 #include <pthread.h>
 #include <string>
 #include "unistd.h"
@@ -13,7 +16,7 @@
 #define ROWS 25
 #define VIDEO_MEMORY_OFFSET 0x000B8000 // 0
 #define REFRESH_TIME 0.06
-#define CLEAR "\033[2J\033[1;1H"
+#define CLEAR "\033[2J"
 #define STANDARD_BACKGROUND "\033[30;40m"
 #define CURSOR_START "\033[1;1H"
 
@@ -64,3 +67,5 @@ public:
 
 	void resetConsole();
 };
+
+#endif

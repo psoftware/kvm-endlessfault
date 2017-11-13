@@ -52,7 +52,7 @@ void* ConsoleOutput::_mainThread(void *This_par){
 
 	while(true){
 
-		cout<<CURSOR_START<<endl;
+		cout<<CURSOR_START;
 		winsize ws;
         ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
 
@@ -75,7 +75,8 @@ void* ConsoleOutput::_mainThread(void *This_par){
  			}
 			cout<<STANDARD_BACKGROUND<<endl;
         }
-
+        cout<<CLEAR;
+        fflush(stdout);
 		sleep(REFRESH_TIME);
 
 	}
