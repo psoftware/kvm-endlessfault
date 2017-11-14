@@ -41,7 +41,7 @@ unsigned char guest_physical_memory[GUEST_PHYSICAL_MEMORY_SIZE] __attribute__ ((
 unsigned char dumb_stack_memory[4096] __attribute__ ((aligned(4096)));
 
 // logger globale
-ConsoleLog& log = *ConsoleLog::getInstance();
+ConsoleLog& logg = *ConsoleLog::getInstance();
 
 // tastiera emulata (frontend)
 keyboard keyb;
@@ -83,50 +83,50 @@ void fetch_application_result(int vcpu_fd, kvm_run *kr) {
 	 */
 	kvm_regs regs;
 	if (ioctl(vcpu_fd, KVM_GET_REGS, &regs) < 0) {
-		log << "get regs: " << strerror(errno) << endl;
+		logg << "get regs: " << strerror(errno) << endl;
 		return;
 	}
 	/* (this is for the general purpose registers, we can also
 	 * obtain the 'special registers' with KVM_GET_SREGS).
 	 */
 
-	log << "Risultato programma (keycode): " << regs.rax << endl;
+	logg << "Risultato programma (keycode): " << regs.rax << endl;
 }
 
 void trace_user_program(int vcpu_fd, kvm_run *kr) {
 	kvm_regs regs;
 	if (ioctl(vcpu_fd, KVM_GET_REGS, &regs) < 0) {
-		log << "trace_user_program KVM_GET_REGS error: " << strerror(errno) << endl;
+		logg << "trace_user_program KVM_GET_REGS error: " << strerror(errno) << endl;
 		return;
 	}
 
 	kvm_sregs sregs;
 	if (ioctl(vcpu_fd, KVM_GET_SREGS, &sregs) < 0) {
-		log << "trace_user_program KVM_GET_SREGS error: " << strerror(errno) << endl;
+		logg << "trace_user_program KVM_GET_SREGS error: " << strerror(errno) << endl;
 		exit(1);
 	}
 
-	log << "Target program dump: " << endl;
-	log << "\tRIP: " << (void *)regs.rip << endl;
-	log << "\tRSP: " << (void *)regs.rsp << endl;
-	log << "\tCR4: " << (void *)sregs.cr4 << endl;
-	log << "\tCR3: " << (void *)sregs.cr3 << endl;
-	log << "\tCR2: " << (void *)sregs.cr2 << endl;
-	log << "\tCR0: " << (void *)sregs.cr0 << endl;
-	log << "\tEFER: " << (void *)sregs.efer << endl;
+	logg << "Target program dump: " << endl;
+	logg << "\tRIP: " << (void *)regs.rip << endl;
+	logg << "\tRSP: " << (void *)regs.rsp << endl;
+	logg << "\tCR4: " << (void *)sregs.cr4 << endl;
+	logg << "\tCR3: " << (void *)sregs.cr3 << endl;
+	logg << "\tCR2: " << (void *)sregs.cr2 << endl;
+	logg << "\tCR0: " << (void *)sregs.cr0 << endl;
+	logg << "\tEFER: " << (void *)sregs.efer << endl;
 
-	log << "\tSREGS base: " << (unsigned int)sregs.ds.base << endl;
-	log << "\tSREGS limit: " << (unsigned int)sregs.ds.limit << endl;
-	log << "\tSREGS selector: " << (unsigned int)sregs.ds.selector << endl;
-	log << "\tSREGS present: " << (unsigned int)sregs.ds.present << endl;
-	log << "\tSREGS type: " << (unsigned int)sregs.ds.type << endl;
-	log << "\tSREGS dpl: " << (unsigned int)sregs.ds.dpl << endl;
-	log << "\tSREGS db: " << (unsigned int)sregs.ds.db << endl;
-	log << "\tSREGS s: " << (unsigned int)sregs.ds.s << endl;
-	log << "\tSREGS l: " << (unsigned int)sregs.ds.l << endl;
-	log << "\tSREGS g: " << (unsigned int)sregs.ds.g << endl;
-	log << "\tSREGS type: " << (unsigned int)sregs.ds.type << endl;
-	log << "\tSREGS selector: " << (unsigned int)sregs.ds.selector << endl;
+	logg << "\tSREGS base: " << (unsigned int)sregs.ds.base << endl;
+	logg << "\tSREGS limit: " << (unsigned int)sregs.ds.limit << endl;
+	logg << "\tSREGS selector: " << (unsigned int)sregs.ds.selector << endl;
+	logg << "\tSREGS present: " << (unsigned int)sregs.ds.present << endl;
+	logg << "\tSREGS type: " << (unsigned int)sregs.ds.type << endl;
+	logg << "\tSREGS dpl: " << (unsigned int)sregs.ds.dpl << endl;
+	logg << "\tSREGS db: " << (unsigned int)sregs.ds.db << endl;
+	logg << "\tSREGS s: " << (unsigned int)sregs.ds.s << endl;
+	logg << "\tSREGS l: " << (unsigned int)sregs.ds.l << endl;
+	logg << "\tSREGS g: " << (unsigned int)sregs.ds.g << endl;
+	logg << "\tSREGS type: " << (unsigned int)sregs.ds.type << endl;
+	logg << "\tSREGS selector: " << (unsigned int)sregs.ds.selector << endl;
 }
 
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
@@ -140,9 +140,9 @@ int main(int argc, char **argv)
 
 	// ci è stato richiesto di utilizzare un file specifico per il logging
 	if(argc == 4 && !strcmp(argv[2], "-logfile"))
-		log.setFilePath(argv[3]);
+		logg.setFilePath(argv[3]);
 	else
-		log.setFilePath("console.log");
+		logg.setFilePath("console.log");
 
 	// controllo validità del path
 	char *elf_file_path = argv[1];
@@ -282,10 +282,10 @@ int main(int argc, char **argv)
 	//possiamo in modalità long mode
 	setup_long_mode(vcpu_fd, guest_physical_memory);
 
-	log << endl << "================== Memory Dump (0x100000 4KB) ==================" << endl;
+	logg << endl << "================== Memory Dump (0x100000 4KB) ==================" << endl;
 	for(int i=0x100000; i<0x100000+4096; i++)
-		log << std::hex << (unsigned int)((unsigned char*)guest_physical_memory)[i];
-	log << endl << "=================================================" << endl;
+		logg << std::hex << (unsigned int)((unsigned char*)guest_physical_memory)[i];
+	logg << endl << "=================================================" << endl;
 
 	// a questo punto possiamo inizializzare le strutture per l'emulazione dei dispositivi di IO
 	initIO();
@@ -305,7 +305,7 @@ int main(int argc, char **argv)
 	while(continue_run)
 	{
 		if (ioctl(vcpu_fd, KVM_RUN, 0) < 0) {
-			log << "run: " << strerror(errno) << endl;
+			logg << "run: " << strerror(errno) << endl;
 			return 1;
 		}
 
@@ -331,18 +331,18 @@ int main(int argc, char **argv)
 				else if (kr->io.size == 1 && kr->io.count == 1 && kr->io.port == 0x02F8 && kr->io.direction == KVM_EXIT_IO_OUT)
 				{
 					// usato per debuggare i programmi
-					log << "kvm: Risultato su Porta parallela: " << std::hex << (unsigned int)*io_param << endl;
+					logg << "kvm: Risultato su Porta parallela: " << std::hex << (unsigned int)*io_param << endl;
 				}
 				else
 				{
-					log << "kvm: Unhandled VM IO: " <<  ((kr->io.direction == KVM_EXIT_IO_IN)?"IN":"OUT")
+					logg << "kvm: Unhandled VM IO: " <<  ((kr->io.direction == KVM_EXIT_IO_IN)?"IN":"OUT")
 						<< " on kr->io.port " << std::hex << (unsigned int)kr->io.port << endl;
 					break;
 				}
 				break;
 			}
 			case KVM_EXIT_MMIO:
-				log << "kvm: unhandled KVM_EXIT_MMIO"
+				logg << "kvm: unhandled KVM_EXIT_MMIO"
 						<< " address=" << std::hex << (uint64_t)kr->mmio.phys_addr
 						<< " len=" << (uint32_t)kr->mmio.len
 						<< " data=" << (uint32_t)((kr->mmio.data[3] << 24) | (kr->mmio.data[2] << 16) | (kr->mmio.data[1] << 8) | kr->mmio.data[0])
@@ -351,21 +351,21 @@ int main(int argc, char **argv)
 				//return 1;
 				break;
 			case KVM_EXIT_SHUTDOWN:
-				log << "kvm: TRIPLE FAULT. Shutting down" << endl;
+				logg << "kvm: TRIPLE FAULT. Shutting down" << endl;
 				trace_user_program(vcpu_fd, kr);
 				return 1;
 			case KVM_EXIT_FAIL_ENTRY:
-				log << "kvm: KVM_EXIT_FAIL_ENTRY reason=" << std::dec << (unsigned long long)kr->fail_entry.hardware_entry_failure_reason << endl;
+				logg << "kvm: KVM_EXIT_FAIL_ENTRY reason=" << std::dec << (unsigned long long)kr->fail_entry.hardware_entry_failure_reason << endl;
 				trace_user_program(vcpu_fd, kr);
 				return 1;
 				break;
 			case KVM_EXIT_INTERNAL_ERROR:
-				log << "kvm: KVM_EXIT_INTERNAL_ERROR suberror=" << std::dec <<kr->internal.suberror << endl;
+				logg << "kvm: KVM_EXIT_INTERNAL_ERROR suberror=" << std::dec <<kr->internal.suberror << endl;
 				trace_user_program(vcpu_fd, kr);
 				return 1;
 				break;
 			default:
-				log << "kvm: Unhandled VM_EXIT reason=" << std::dec << kr->exit_reason << endl;
+				logg << "kvm: Unhandled VM_EXIT reason=" << std::dec << kr->exit_reason << endl;
 				trace_user_program(vcpu_fd, kr);
 				return 1;
 		}

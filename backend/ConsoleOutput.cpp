@@ -108,6 +108,9 @@ void* ConsoleOutput::_blinkThread(void *param){
 	ConsoleOutput* This = (ConsoleOutput*)param;
 	uint16_t newIndex, oldIndex = This->vga->cursorPosition();
 
+	uint16_t x = oldIndex % COLS;
+	uint16_t y = floor( oldIndex / COLS );
+
 	// sposto il cursore in _videoMatrix[oldIndex]
 
 	/*

@@ -90,7 +90,7 @@ void keyboard::insert_keycode_event(uint8_t keycode)
 {
 	pthread_mutex_lock(&mutex);
 
-	log << "keyboard: ricevuto " << (unsigned int)keycode << endl;
+	logg << "keyboard: ricevuto " << (unsigned int)keycode << endl;
 
 	if(!enabled)
 		goto err;
@@ -98,12 +98,12 @@ void keyboard::insert_keycode_event(uint8_t keycode)
 	// condizione di coda piena
 	if(buffer_element_count == INTERNAL_BUFFER_SIZE)
 	{
-		log << "keyboard: droppato per coda piena" << endl;
+		logg << "keyboard: droppato per coda piena" << endl;
 		goto err;
 	}
 
 	// inseriamo il keycode nel buffer (coda)
-	log << "keyboard: inserito in coda" << endl;
+	logg << "keyboard: inserito in coda" << endl;
 
 	internal_buffer[buffer_head_pointer] = keycode;
 	buffer_head_pointer = (buffer_head_pointer + 1) % INTERNAL_BUFFER_SIZE;

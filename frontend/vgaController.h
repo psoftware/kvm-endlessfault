@@ -5,12 +5,13 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <iostream>
+#include <math.h>
 #include "../backend/ConsoleLog.h"
 
 using namespace std;
 
 // logger globale
-extern ConsoleLog& log;
+extern ConsoleLog& logg;
 
 
 class VGAController : public IODevice{

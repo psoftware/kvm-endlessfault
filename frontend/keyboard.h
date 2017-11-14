@@ -9,7 +9,7 @@
 #include "../backend/ConsoleLog.h"
 
 // logger globale
-extern ConsoleLog& log;
+extern ConsoleLog& logg;
 
 class keyboard : public IODevice {
 private:
