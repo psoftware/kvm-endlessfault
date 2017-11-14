@@ -69,7 +69,7 @@ void* ConsoleOutput::_mainThread(void *This_par){
 
         uint16_t curr_rows = ws.ws_row;
         uint16_t curr_cols = ws.ws_col;
-        uint16_t minRows = This->_min(ROWS, curr_rows)-1;
+        uint16_t minRows = This->_min(ROWS, curr_rows);
         uint16_t minCols = This->_min(COLS, curr_cols);
 
         for (int i = 0; i < minRows ; i++) {
@@ -90,7 +90,7 @@ void* ConsoleOutput::_mainThread(void *This_par){
 				cout<<STANDARD_BACKGROUND<<endl;
 			
 			else{
-				
+
 				cout<<STANDARD_BACKGROUND;
 				fflush(stdout);
 			}
