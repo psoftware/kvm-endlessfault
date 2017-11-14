@@ -1,4 +1,4 @@
-COMM_CFLAGS=-std=gnu++14
+COMM_CFLAGS=-std=gnu++14 -g
 LD_FLAGS=-pthread
 ELFPROG_CFLAGS=-nostdlib -Ttext=0x100000 -fno-asynchronous-unwind-tables -m64 -Wl,--build-id=none
 
@@ -14,13 +14,10 @@ ELF_HEADER_FILES := $(wildcard elf/*.h)
 
 ## -- linking
 
-all: kvm build/caric build/prog_prova build/keyboard_program
+all: kvm build/prog_prova build/keyboard_program
 
 kvm: kvm.o boot.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
 	g++ kvm.o boot.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) -o kvm $(LD_FLAGS)
-
-build/caric: $(ELF_OBJ_FILES) elf/main.o
-	g++ $(ELF_OBJ_FILES) elf/main.o -o build/caric $(LD_FLAGS)
 
 build/prog_prova: target/prog_prova.c target/prog_prova.s
 	gcc $(ELFPROG_CFLAGS) target/prog_prova.c target/prog_prova.s -o build/prog_prova

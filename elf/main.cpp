@@ -1,8 +1,11 @@
 #include <iostream>
+#include "../backend/ConsoleLog.h"
 using namespace std;
 
 extern unsigned long estrai_segmento(char *fname, void *dest, unsigned long dest_size);
 #define DIM 20000
+
+ConsoleLog& logg = *ConsoleLog::getInstance();
 
 unsigned char mem1[DIM];
 
