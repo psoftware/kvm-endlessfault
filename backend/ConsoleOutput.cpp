@@ -84,7 +84,16 @@ void* ConsoleOutput::_mainThread(void *This_par){
 			    cout<<toPrint;
 		   
  			}
-			cout<<STANDARD_BACKGROUND<<endl;
+
+			if(i != minRows -1)
+
+				cout<<STANDARD_BACKGROUND<<endl;
+			
+			else{
+				
+				cout<<STANDARD_BACKGROUND;
+				fflush(stdout);
+			}
         }
 		sleep(REFRESH_TIME);
 
@@ -97,11 +106,29 @@ void* ConsoleOutput::_mainThread(void *This_par){
 void* ConsoleOutput::_blinkThread(void *param){
 
 	ConsoleOutput* This = (ConsoleOutput*)param;
-	
-	uint16_t index = This->vga->cursorPosition();
-	
-	//This->_videoMatrix[index]
+	uint16_t newIndex, oldIndex = This->vga->cursorPosition();
 
+	// sposto il cursore in _videoMatrix[oldIndex]
+
+	/*
+
+	*/
+
+	while(true){
+	
+		while((newIndex = This->vga->cursorPosition()) == oldIndex);
+
+		//sposto il cursore in _videoMatrix[newIndex]
+
+		/*
+
+
+		*/
+
+
+		oldIndex = newIndex;
+
+	}
 
 }
 
