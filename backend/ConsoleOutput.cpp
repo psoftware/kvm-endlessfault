@@ -5,11 +5,11 @@ ConsoleOutput::ConsoleOutput(){
 	tcgetattr(STDIN_FILENO, &tty_attr_old);
 
 	//_videoMatrix = reinterpret_cast<uint16_t*>(VIDEO_MEMORY_OFFSET);
-
+/*
 	for(int i = 0; i<ROWS*COLS; ++i){
 		_videoMatrix[i] = 0x4B00 | ' ';
 	}
-
+*/
 }
 
 ConsoleOutput::~ConsoleOutput()
@@ -50,16 +50,21 @@ bool ConsoleOutput::startThread() {
 	if(_videoThread != 0 || _cursorBlink != 0)
 		return false;
 
-
+	_videoMatrix = vga->getVMem();
+	
 	pthread_create(&_videoThread, NULL, ConsoleOutput::_mainThread, this);
-	pthread_create(&_cursorBlink, NULL, ConsoleOutput::_blinkThread, this);
+
+	//pthread_create(&_cursorBlink, NULL, ConsoleOutput::_blinkThread, this);
 
 }
 
 void* ConsoleOutput::_mainThread(void *This_par){
 
 	ConsoleOutput* This = (ConsoleOutput*)This_par;
+
+	cout<<HIDE_CURSOR;
 	cout<<CLEAR;
+
 
 	while(true){
 
@@ -113,21 +118,21 @@ void* ConsoleOutput::_blinkThread(void *param){
 
 	// sposto il cursore in _videoMatrix[oldIndex]
 
+	//cout<<"\033["<<x<<';'<<y<<'H';
 	/*
 
 	*/
 
 	while(true){
 	
-		while((newIndex = This->vga->cursorPosition()) == oldIndex);
+		while((newIndex = This->vga->cursorPosition()) == oldIndex){
+			
+			cout<<"\033[?25l";
+			sleep(0.5);
+			cout<<"\033[?25h";
+		}
 
-		//sposto il cursore in _videoMatrix[newIndex]
-
-		/*
-
-
-		*/
-
+		
 
 		oldIndex = newIndex;
 
@@ -174,3 +179,6 @@ string ConsoleOutput::_getBackgroundColor(uint32_t code){
 	return color_t.supportedBackgroundColor[code];
 
 }
+
+
+

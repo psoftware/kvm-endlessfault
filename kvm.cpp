@@ -61,6 +61,7 @@ void initIO()
 	// avviamo il thread che si occuperà di gestire l'input della console
 	console->startEventThread();
 
+	vga.setVMem((uint16_t*)(guest_physical_memory + 0xB8000));
 	co = ConsoleOutput::getInstance();
 	co->attachVGA(&vga);
 	co->startThread();

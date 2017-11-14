@@ -61,3 +61,17 @@ uint16_t VGAController::cursorPosition(){
 
 	return index;
 }
+
+
+void VGAController::setVMem(uint16_t* m){
+
+	mem = m;
+
+}
+
+
+uint16_t* VGAController::getVMem(){
+
+
+	return mem;
+}

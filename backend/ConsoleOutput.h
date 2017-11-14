@@ -16,11 +16,11 @@
 
 #define COLS 80
 #define ROWS 25
-#define VIDEO_MEMORY_OFFSET 0x000B8000 // 0
 #define REFRESH_TIME 0.06
 #define CLEAR "\033[2J"
 #define STANDARD_BACKGROUND "\033[30;40m"
 #define CURSOR_START "\033[0;0H"
+#define HIDE_CURSOR "\033[?25l"
 
 using namespace std;
 
@@ -33,8 +33,7 @@ private:
 
 	VGAController* vga;
 
-	//uint16_t* _videoMatrix;
-	uint16_t _videoMatrix[ROWS*COLS];
+	uint16_t* _videoMatrix;
 
 	struct termios tty_attr_old;
 
