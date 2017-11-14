@@ -329,15 +329,23 @@ int main(int argc, char **argv)
 					else if(kr->io.direction == KVM_EXIT_IO_IN)
 						*io_param = keyb.read_reg_byte(kr->io.port);
 				}
+				// ======== VGA Controller ========
 				else if (kr->io.size == 1 && kr->io.count == 1 && (kr->io.port == 0x03D4 || kr->io.port == 0x03D5 || kr->io.port == 0x0e || kr->io.port == 0x0f))
 				{
 					if(kr->io.direction == KVM_EXIT_IO_OUT)
 						vga.write_reg_byte(kr->io.port, *io_param);
 				}
+				// ======== Porta Seriale Secondaria ========
 				else if (kr->io.size == 1 && kr->io.count == 1 && kr->io.port == 0x02F8 && kr->io.direction == KVM_EXIT_IO_OUT)
 				{
 					// usato per debuggare i programmi
 					logg << "kvm: Risultato su Porta parallela: " << std::hex << (unsigned int)*io_param << endl;
+				}
+				// ======== Registri Controller PCI ========
+				else if(kr->io.port == 0xcfc || kr->io.port == 0xcf8)
+				{
+					// skippiamo i warning perchè i programmi target iterano sui dispositivi del bus pci
+					// e rallentano l'esecuzione del programma
 				}
 				else
 				{
