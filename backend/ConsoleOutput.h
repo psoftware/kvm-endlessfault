@@ -11,6 +11,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include "../frontend/vgaController.h"
 
 #define COLS 80
 #define ROWS 25
@@ -18,7 +19,7 @@
 #define REFRESH_TIME 0.06
 #define CLEAR "\033[2J"
 #define STANDARD_BACKGROUND "\033[30;40m"
-#define CURSOR_START "\033[1;1H"
+#define CURSOR_START "\033[0;0H"
 
 using namespace std;
 
@@ -28,6 +29,8 @@ private:
 
 	pthread_t _videoThread;
 	pthread_t _cursorBlink;
+
+	VGAController* vga;
 
 	//uint16_t* _videoMatrix;
 	uint16_t _videoMatrix[ROWS*COLS];
@@ -64,6 +67,8 @@ public:
 	static ConsoleOutput* getInstance();
 
 	bool startThread();
+
+	bool attachVGA(VGAController* v);
 
 	void resetConsole();
 };

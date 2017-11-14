@@ -34,17 +34,30 @@ void VGAController:: write_reg_byte(io_addr addr, uint8_t val){
 				break;
 
 				default:
-					cout<<"Registro selezionato non valido"<<endl;
+					log<<"VGA : Registro selezionato non valido"<<endl;
 			}
 
 		break;
 
 		default:
 
-			cout<<"Indirizzo selezionato non valido"<<endl;
+			log<<"VGA : Indirizzo selezionato non valido"<<endl;
 
 	}
 
 	pthread_mutex_unlock(&mutex);
 
+}
+
+
+
+uint16_t VGAController::cursorPosition(){
+
+	pthread_mutex_lock(&mutex);
+
+	uint16_t index = (((uint16_t)CUR_HIGH) << 8 ) + ( (uint16_t) CUR_LOW );
+
+	pthread_mutex_unlock(&mutex);
+
+	return index;
 }

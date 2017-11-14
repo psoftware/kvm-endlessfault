@@ -1,9 +1,17 @@
+#ifndef VGACONTROLLER_H
+#define VGACONTROLLER_H
+
 #include "IODevice.h"
 #include <stdint.h>
 #include <pthread.h>
 #include <iostream>
+#include "../backend/ConsoleLog.h"
 
 using namespace std;
+
+// logger globale
+extern ConsoleLog& log;
+
 
 class VGAController : public IODevice{
 
@@ -27,5 +35,7 @@ public:
 
 	VGAController();
 	void write_reg_byte(io_addr addr, uint8_t val);
-
+	uint16_t cursorPosition();
 };
+
+#endif

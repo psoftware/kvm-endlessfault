@@ -34,6 +34,17 @@ ConsoleOutput* ConsoleOutput::getInstance()
 }
 
 
+
+bool ConsoleOutput::attachVGA(VGAController* v){
+
+	if(vga != NULL)
+		return false;
+
+	vga = v;
+	return true;
+}
+
+
 bool ConsoleOutput::startThread() {
 
 	if(_videoThread != 0 || _cursorBlink != 0)
@@ -41,14 +52,14 @@ bool ConsoleOutput::startThread() {
 
 
 	pthread_create(&_videoThread, NULL, ConsoleOutput::_mainThread, this);
-	pthread_create(&_cursorBlink, NULL, ConsoleOutput::_blinkThread, NULL);
+	pthread_create(&_cursorBlink, NULL, ConsoleOutput::_blinkThread, this);
 
 }
 
 void* ConsoleOutput::_mainThread(void *This_par){
 
 	ConsoleOutput* This = (ConsoleOutput*)This_par;
-	cout<<CLEAR<<endl;
+	cout<<CLEAR;
 
 	while(true){
 
@@ -58,7 +69,7 @@ void* ConsoleOutput::_mainThread(void *This_par){
 
         uint16_t curr_rows = ws.ws_row;
         uint16_t curr_cols = ws.ws_col;
-        uint16_t minRows = This->_min(ROWS, curr_rows);
+        uint16_t minRows = This->_min(ROWS, curr_rows)-1;
         uint16_t minCols = This->_min(COLS, curr_cols);
 
         for (int i = 0; i < minRows ; i++) {
@@ -75,8 +86,6 @@ void* ConsoleOutput::_mainThread(void *This_par){
  			}
 			cout<<STANDARD_BACKGROUND<<endl;
         }
-        cout<<CLEAR;
-        fflush(stdout);
 		sleep(REFRESH_TIME);
 
 	}
@@ -87,7 +96,11 @@ void* ConsoleOutput::_mainThread(void *This_par){
 
 void* ConsoleOutput::_blinkThread(void *param){
 
-
+	ConsoleOutput* This = (ConsoleOutput*)param;
+	
+	uint16_t index = This->vga->cursorPosition();
+	
+	//This->_videoMatrix[index]
 
 
 }

@@ -61,8 +61,9 @@ void initIO()
 	// avviamo il thread che si occuperà di gestire l'input della console
 	console->startEventThread();
 
-//	co = ConsoleOutput::getInstance();
-//	co->startThread();
+	co = ConsoleOutput::getInstance();
+	co->attachVGA(&vga);
+	co->startThread();
 }
 
 void endIO()
@@ -71,6 +72,7 @@ void endIO()
 	// non tornebbe nello stato di funzionamento precedente
 	// all'instanziazione dell'oggetto ConsoleInput
 	console->resetConsole();
+	co->resetConsole();
 }
 
 // funzione chiamata su HLT del programma della vm per ottenere
