@@ -329,6 +329,11 @@ int main(int argc, char **argv)
 					else if(kr->io.direction == KVM_EXIT_IO_IN)
 						*io_param = keyb.read_reg_byte(kr->io.port);
 				}
+				else if (kr->io.size == 1 && kr->io.count == 1 && (kr->io.port == 0x03D4 || kr->io.port == 0x03D5 || kr->io.port == 0x0e || kr->io.port == 0x0f))
+				{
+					if(kr->io.direction == KVM_EXIT_IO_OUT)
+						vga.write_reg_byte(kr->io.port, *io_param);
+				}
 				else if (kr->io.size == 1 && kr->io.count == 1 && kr->io.port == 0x02F8 && kr->io.direction == KVM_EXIT_IO_OUT)
 				{
 					// usato per debuggare i programmi
