@@ -42,8 +42,8 @@ backend/%.o: backend/%.cpp backend/%.h
 elf/%.o: elf/%.cpp $(ELF_HEADER_FILES)
 	g++ -c -o $@ $< $(COMM_CFLAGS)
 
-bootloader/%.o: backend/%.cpp backend/%.h
-	g++ -c -o $@ $< $(COMM_CFLAGS)
+bootloader/Bootloader.o: bootloader/Bootloader.cpp bootloader/Bootloader.h
+	g++ -c bootloader/Bootloader.cpp -o bootloader/Bootloader.o $(COMM_CFLAGS)
 
 clean:
 	rm -f *.o frontend/*.o backend/*.o elf/*.o
