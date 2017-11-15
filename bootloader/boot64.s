@@ -16,8 +16,7 @@ _start:
     orl $0x80000000, %eax
     movl %eax, %cr0
 # saltiamo all'entry point
-    pushl %edi
-    ret 
+    jmp %edi
 
  
 .code64
