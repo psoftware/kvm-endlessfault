@@ -10,6 +10,9 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 
+#define BOOTLOADER_DIM 100
+
+
 class Bootloader {
 private:
 	int vcpu_fd_;

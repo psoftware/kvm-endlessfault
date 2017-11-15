@@ -16,8 +16,8 @@ ELF_HEADER_FILES := $(wildcard elf/*.h)
 
 all: kvm build/prog_prova build/keyboard_program
 
-kvm: kvm.o bootloader/Bootloader.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
-	g++ kvm.o bootloader/Bootloader.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) -o kvm $(LD_FLAGS)
+kvm: kvm.o bootloader/Bootloader.o bootloader/bootloader_code.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
+	g++ kvm.o bootloader/Bootloader.o bootloader/bootloader_code.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) -o kvm $(LD_FLAGS)
 
 build/prog_prova: target/prog_prova.c target/prog_prova.s
 	gcc $(ELFPROG_CFLAGS) target/prog_prova.c target/prog_prova.s -o build/prog_prova
@@ -42,9 +42,11 @@ backend/%.o: backend/%.cpp backend/%.h
 elf/%.o: elf/%.cpp $(ELF_HEADER_FILES)
 	g++ -c -o $@ $< $(COMM_CFLAGS)
 
-bootloader/Bootloader.o: bootloader/Bootloader.cpp bootloader/Bootloader.h
+bootloader/Bootloader.o: bootloader/Bootloader.cpp bootloader/Bootloader.h 
 	g++ -c bootloader/Bootloader.cpp -o bootloader/Bootloader.o $(COMM_CFLAGS)
 
+bootloader/bootloader_code.o: bootloader/bootloader_code.cpp
+	g++ -c bootloader/bootloader_code.cpp -o bootloader/bootloader_code.o $(COMM_CFLAGS)
 clean:
 	rm -f *.o frontend/*.o backend/*.o elf/*.o
 	rm -f kvm

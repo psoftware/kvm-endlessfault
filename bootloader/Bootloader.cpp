@@ -58,6 +58,9 @@
 // logger globale
 ConsoleLog& logg2 = *ConsoleLog::getInstance();
 
+extern uint8_t bootloader_code[];
+
+
 Bootloader::Bootloader(int vcpu_fd, unsigned char *guest_mem, uint64_t entry_point, uint64_t start_stack)
 {
 	vcpu_fd_ = vcpu_fd;
@@ -192,10 +195,14 @@ int Bootloader::run_protected_mode()
 	regs.rsp = start_stack_;
 	logg2 << "rip=" << std::hex <<(unsigned long) regs.rip << " rsp=" << (unsigned long)regs.rsp << std::endl;
 
+
+
 	if (ioctl(vcpu_fd_, KVM_SET_REGS, &regs) < 0) {
 		perror("KVM_SET_REGS");
 		exit(1);
 	}
+
+
 
 /*	memcpy(vm->mem, code32, code32_end-code32);
 
@@ -229,18 +236,21 @@ int Bootloader::run_long_mode()
 	}
 
 	setup_protected_mode(&sregs);
-	setup_long_mode(&sregs);
+	//setup_long_mode(&sregs);
 
     if (ioctl(vcpu_fd_, KVM_SET_SREGS, &sregs) < 0) {
 		perror("KVM_SET_SREGS");
 		exit(1);
-	}
+	} 
 
 	memset(&regs, 0, sizeof(regs));
 	/* Clear all FLAGS bits, except bit 1 which is always set. */
 	regs.rflags = 2;
-	regs.rip = entry_point_;
+	//regs.rip = entry_point_;
+	regs.rdi = entry_point_;
 	regs.rsp = start_stack_;
+
+	memcpy(guest_mem_,bootloader_code,BOOTLOADER_DIM);
 
 	if (ioctl(vcpu_fd_, KVM_SET_REGS, &regs) < 0) {
 		perror("KVM_SET_REGS");
