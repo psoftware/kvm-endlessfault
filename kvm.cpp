@@ -10,7 +10,7 @@
 #include "frontend/keyboard.h"
 #include "backend/ConsoleLog.h"
 #include "backend/ConsoleInput.h"
-#include "boot.h"
+#include "bootloader/Bootloader.h"
 
 #include "backend/ConsoleOutput.h"
 #include "frontend/vgaController.h"
@@ -278,15 +278,16 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	//passiamo alla modalità protetta
-	setup_protected_mode(vcpu_fd, guest_physical_memory, entry_point);
-	//possiamo in modalità long mode
-	setup_long_mode(vcpu_fd, guest_physical_memory);
+	Bootloader bootloader(vcpu_fd,guest_physical_memory,entry_point,0x400000);
+	//bootloader.run_long_mode();
+	bootloader.run_protected_mode();
 
+	#ifndef SUPPRESS_DEBUG
 	logg << endl << "================== Memory Dump (0x100000 4KB) ==================" << endl;
 	for(int i=0x100000; i<0x100000+4096; i++)
 		logg << std::hex << (unsigned int)((unsigned char*)guest_physical_memory)[i];
 	logg << endl << "=================================================" << endl;
+	#endif
 
 	// a questo punto possiamo inizializzare le strutture per l'emulazione dei dispositivi di IO
 	initIO();

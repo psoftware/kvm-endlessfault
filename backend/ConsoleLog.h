@@ -4,6 +4,9 @@
 #include <iostream>
 #include <fstream>
 
+#define SUPPRESS_DEBUG
+
+
 class ConsoleLog {
 private:
 	// il costruttore è privato perchè vogliamo seguire il design pattern Singleton

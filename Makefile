@@ -1,6 +1,6 @@
 COMM_CFLAGS=-std=gnu++14 -g -no-pie
 LD_FLAGS=-pthread
-ELFPROG_CFLAGS=-nostdlib -Ttext=0x100000 -fno-asynchronous-unwind-tables -m64 -Wl,--build-id=none -no-pie
+ELFPROG_CFLAGS=-nostdlib -Ttext=0x100000 -fno-asynchronous-unwind-tables -m64 -Wl,--build-id=none -no-pie -m32
 
 FRONTEND_CPP_FILES := $(wildcard frontend/*.cpp)
 FRONTEND_OBJ_FILES = $(patsubst frontend/%.cpp,frontend/%.o,$(FRONTEND_CPP_FILES))
@@ -16,8 +16,8 @@ ELF_HEADER_FILES := $(wildcard elf/*.h)
 
 all: kvm build/prog_prova build/keyboard_program
 
-kvm: kvm.o boot.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
-	g++ kvm.o boot.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) -o kvm $(LD_FLAGS)
+kvm: kvm.o bootloader/Bootloader.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
+	g++ kvm.o bootloader/Bootloader.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) -o kvm $(LD_FLAGS)
 
 build/prog_prova: target/prog_prova.c target/prog_prova.s
 	gcc $(ELFPROG_CFLAGS) target/prog_prova.c target/prog_prova.s -o build/prog_prova
@@ -30,8 +30,8 @@ build/keyboard_program: target/keyboard_program.s
 kvm.o: kvm.cpp
 	g++ -c kvm.cpp -o kvm.o $(COMM_CFLAGS)
 
-boot.o: boot.cpp boot.h
-	g++ -c boot.cpp -o boot.o $(COMM_CFLAGS)
+#boot.o: boot.cpp boot.h
+#	g++ -c boot.cpp -o boot.o $(COMM_CFLAGS)
 
 frontend/%.o: frontend/%.cpp frontend/%.h
 	g++ -c -o $@ $< $(COMM_CFLAGS)
@@ -42,7 +42,11 @@ backend/%.o: backend/%.cpp backend/%.h
 elf/%.o: elf/%.cpp $(ELF_HEADER_FILES)
 	g++ -c -o $@ $< $(COMM_CFLAGS)
 
+bootloader/%.o: backend/%.cpp backend/%.h
+	g++ -c -o $@ $< $(COMM_CFLAGS)
+
 clean:
 	rm -f *.o frontend/*.o backend/*.o elf/*.o
 	rm -f kvm
 	rm -f build/*
+	rm -f bootloader/*.o
