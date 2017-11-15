@@ -14,7 +14,7 @@ ELF_HEADER_FILES := $(wildcard elf/*.h)
 
 ## -- linking
 
-all: kvm build/prog_prova build/keyboard_program
+all: kvm build/prog_prova build/keyboard_program build/ricorsivo
 
 kvm: kvm.o bootloader/Bootloader.o bootloader/bootloader_code.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
 	g++ kvm.o bootloader/Bootloader.o bootloader/bootloader_code.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) -o kvm $(LD_FLAGS)
@@ -25,6 +25,8 @@ build/prog_prova: target/prog_prova.c target/prog_prova.s
 build/keyboard_program: target/keyboard_program.s
 	gcc $(ELFPROG_CFLAGS) target/keyboard_program.s -o build/keyboard_program
 
+build/ricorsivo: target/main.cpp
+	g++ $(ELFPROG_CFLAGS) target/main.cpp -o build/ricorsivo
 ## -- compilazione
 
 kvm.o: kvm.cpp
