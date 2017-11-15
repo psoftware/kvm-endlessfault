@@ -7,7 +7,7 @@
 
 using namespace std;
 
-ConsoleInput::ConsoleInput()
+ConsoleInput::ConsoleInput() : attached_keyboard(0), is_shifted(false)
 {
 	struct termios tty_attr;
 
