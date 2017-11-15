@@ -278,9 +278,9 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	Bootloader bootloader(vcpu_fd,guest_physical_memory,entry_point,0x400000);
-	bootloader.run_long_mode();
-	//bootloader.run_protected_mode();
+	Bootloader bootloader(vcpu_fd,guest_physical_memory,entry_point,0x400000L);
+	//bootloader.run_long_mode();
+	bootloader.run_protected_mode();
 
 	#ifndef SUPPRESS_DEBUG
 	logg << endl << "================== Memory Dump (0x100000 4KB) ==================" << endl;

@@ -54,9 +54,8 @@ uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size)
 			continue;
 		}
 		// ====
-		#ifndef SUPPRESS_DEBUG
 		logg << "byte copiati in m1 " << std::dec << s->copia_segmento((uint8_t*)dest + ind_virtuale) << endl;
-
+		#ifndef SUPPRESS_DEBUG
 		for(int i=ind_virtuale; i<ind_virtuale+dimensione; i++){
 			logg << std::hex << (unsigned int)((unsigned char*)dest)[i];
 		}
