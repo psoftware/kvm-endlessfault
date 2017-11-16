@@ -56,7 +56,7 @@
 #define PDE64_G (1 << 8)
 
 // logger globale
-ConsoleLog& logg2 = *ConsoleLog::getInstance();
+extern ConsoleLog& logg;
 
 extern uint8_t bootloader_code[];
 
@@ -193,7 +193,7 @@ int Bootloader::run_protected_mode()
 	regs.rflags = 2;
 	regs.rip = entry_point_;
 	regs.rsp = start_stack_;
-	logg2 << "rip=" << std::hex <<(unsigned long) regs.rip << " rsp=" << (unsigned long)regs.rsp << std::endl;
+	logg << "rip=" << std::hex <<(unsigned long) regs.rip << " rsp=" << (unsigned long)regs.rsp << std::endl;
 
 
 
