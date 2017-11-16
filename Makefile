@@ -25,9 +25,9 @@ build/prog_prova: target/prog_prova.c target/prog_prova.s
 build/keyboard_program: target/keyboard_program.s
 	gcc $(ELFPROG_CFLAGS) target/keyboard_program.s -o build/keyboard_program
 
-build/ricorsivo: target/main.cpp
-	g++ $(ELFPROG_CFLAGS) target/main.cpp -o build/ricorsivo
-## -- compilazione
+build/ricorsivo: target/ricorsivo.c target/prog_prova.s
+	gcc $(ELFPROG_CFLAGS) target/ricorsivo.c target/prog_prova.s -o build/ricorsivo
+## --compilazione
 
 kvm.o: kvm.cpp
 	g++ -c kvm.cpp -o kvm.o $(COMM_CFLAGS)
@@ -44,7 +44,7 @@ backend/%.o: backend/%.cpp backend/%.h
 elf/%.o: elf/%.cpp $(ELF_HEADER_FILES)
 	g++ -c -o $@ $< $(COMM_CFLAGS)
 
-bootloader/Bootloader.o: bootloader/Bootloader.cpp bootloader/Bootloader.h 
+bootloader/Bootloader.o: bootloader/Bootloader.cpp bootloader/Bootloader.h
 	g++ -c bootloader/Bootloader.cpp -o bootloader/Bootloader.o $(COMM_CFLAGS)
 
 bootloader/bootloader_code.o: bootloader/bootloader_code.cpp
