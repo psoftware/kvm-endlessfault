@@ -53,6 +53,11 @@ uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size)
 			logg << "il segmento è troppo grande per essere caricato o sfora i limiti della memoria fisica" << endl;
 			continue;
 		}
+		else if(ind_virtuale < 0x100000)
+		{
+			logg << "il segmento non può stare in 0x0 - 0x100000. Non faccio nulla" << endl;
+			continue;
+		}
 		// ====
 		logg << "byte copiati in m1 " << std::dec << s->copia_segmento((uint8_t*)dest + ind_virtuale) << endl;
 		#ifndef SUPPRESS_DEBUG
