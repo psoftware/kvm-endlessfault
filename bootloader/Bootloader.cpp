@@ -152,11 +152,19 @@ void Bootloader::setup_long_mode(kvm_sregs *sregs)
 	uint64_t pd_addr = 0x4000;
 	uint64_t *pd = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(guest_mem_) + pd_addr);
 
-	pml4[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | pdpt_addr;
-	pdpt[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | pd_addr;
-	pd[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS;
-	pd[1] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS | (0x200000L << 12);
-	pd[2] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS | (0x400000L << 12);
+	//tab liv 4
+	pml4[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | (pdpt_addr);
+
+	//tab liv 3
+	pdpt[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | (pd_addr);
+
+	//tab liv 2
+	for(uint16_t i_liv2=0; i_liv2<3; i_liv2++)
+	{
+		// stiamo lavorando con pagine che indirizzano 2MiB usando bit PS
+		pd[i_liv2] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS | ((((uint64_t)i_liv2)*1024*1024*2));
+		logg << "pd[" << i_liv2 << "]=" << std::hex << pd[i_liv2] << "\n";
+	}
 
 	sregs->cr3 = pml4_addr;
 	sregs->cr4 = CR4_PAE;
