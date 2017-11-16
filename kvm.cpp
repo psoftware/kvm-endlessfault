@@ -2,6 +2,7 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <iostream>
+#include <iomanip>
 #include <cerrno>
 #include <cstring>
 #include <sys/mman.h>
@@ -283,9 +284,14 @@ int main(int argc, char **argv)
 	//bootloader.run_protected_mode();
 
 	#ifndef SUPPRESS_DEBUG
-	logg << endl << "================== Memory Dump (0x100000 4KB) ==================" << endl;
-	for(int i=0x100000; i<0x100000+4096; i++)
-		logg << std::hex << (unsigned int)((unsigned char*)guest_physical_memory)[i];
+	uint64_t dump_addr = 0x200100;
+	logg << endl << "================== Memory Dump (" << std::hex << dump_addr << " 4KB) ==================" << endl;
+	for(int i=dump_addr; i<dump_addr+512; i++)
+	{
+		fprintf(stderr, "%02x", (unsigned int)((unsigned char*)guest_physical_memory)[i]);
+		logg << std::setfill('0') << std::setw(2) << std::hex << (unsigned int)((unsigned char*)guest_physical_memory)[i];
+		//cerr << std::hex << (unsigned int)((unsigned char*)guest_physical_memory)[i];
+	}
 	logg << endl << "=================================================" << endl;
 	#endif
 
