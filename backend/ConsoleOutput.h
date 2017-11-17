@@ -22,6 +22,8 @@
 #define STANDARD_BACKGROUND "\033[30;40m"
 #define CURSOR_START "\033[0;0H"
 #define HIDE_CURSOR "\033[?25l"
+#define UNDERLINED "\033[4m"
+#define RESTORE "\033[0m"
 
 using namespace std;
 

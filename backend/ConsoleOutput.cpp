@@ -95,11 +95,11 @@ void* ConsoleOutput::_mainThread(void *This_par){
 
 			   		if(This->_isBlinking)
 
-						cout<<"\033[" + This->_getTextColor((uint32_t)textC) + ';' + This->_getBackgroundColor((uint32_t)backg) + "m_";
-			   		
+			   			cout<<UNDERLINED<<toPrint<<RESTORE;
+
 			   		else
 
-			   			cout<<"\033[" + This->_getTextColor((uint32_t)textC) + ';' + This->_getBackgroundColor((uint32_t)backg) + "m ";;
+			   			cout<<toPrint;
 
 			   		pthread_mutex_unlock(&(This->_cursorMutex));
 
