@@ -3,13 +3,9 @@
 ConsoleOutput::ConsoleOutput(){
 
 	tcgetattr(STDIN_FILENO, &tty_attr_old);
-
-	//_videoMatrix = reinterpret_cast<uint16_t*>(VIDEO_MEMORY_OFFSET);
-/*
-	for(int i = 0; i<ROWS*COLS; ++i){
-		_videoMatrix[i] = 0x4B00 | ' ';
-	}
-*/
+	pthread_mutex_init(&_cursorMutex, NULL);
+	_isBlinking = true;
+	
 }
 
 ConsoleOutput::~ConsoleOutput()
@@ -37,10 +33,10 @@ ConsoleOutput* ConsoleOutput::getInstance()
 
 bool ConsoleOutput::attachVGA(VGAController* v){
 
-	if(vga != NULL)
+	if(_vga != NULL)
 		return false;
 
-	vga = v;
+	_vga = v;
 	return true;
 }
 
@@ -50,11 +46,11 @@ bool ConsoleOutput::startThread() {
 	if(_videoThread != 0 || _cursorBlink != 0)
 		return false;
 
-	_videoMatrix = vga->getVMem();
+	_videoMatrix = _vga->getVMem();
 	
 	pthread_create(&_videoThread, NULL, ConsoleOutput::_mainThread, this);
 
-	//pthread_create(&_cursorBlink, NULL, ConsoleOutput::_blinkThread, this);
+	pthread_create(&_cursorBlink, NULL, ConsoleOutput::_blinkThread, this);
 
 }
 
@@ -77,16 +73,39 @@ void* ConsoleOutput::_mainThread(void *This_par){
         uint16_t minRows = This->_min(ROWS, curr_rows);
         uint16_t minCols = This->_min(COLS, curr_cols);
 
+
+        uint16_t cursorIndex = This->_vga->cursorPosition();
+
+		uint16_t cursorX = cursorIndex % COLS;
+		uint16_t cursorY = floor( cursorIndex / COLS );
+
         for (int i = 0; i < minRows ; i++) {
 			for(int j = 0; j< minCols; j++){
 
 			    uint16_t temp = This->_videoMatrix[i*COLS + j];
 			    char c = (char)temp;
 			    char textC =(char) ( (temp>>8) & 0x000f);
-			    char sfondo = (char) ((temp & 0x7000)>>12);
+			    char backg = (char) ((temp & 0x7000)>>12);
 		 
-			    string toPrint = "\033[" + This->_getTextColor((uint32_t)textC) + ';' + This->_getBackgroundColor((uint32_t)sfondo) + 'm' + c;
-			    cout<<toPrint;
+			    string toPrint = "\033[" + This->_getTextColor((uint32_t)textC) + ';' + This->_getBackgroundColor((uint32_t)backg) + 'm' + c;
+			   	
+			   	if( (cursorY*COLS + cursorX) == (i*COLS+j)){
+
+			   		pthread_mutex_lock(&(This->_cursorMutex));
+
+			   		if(This->_isBlinking)
+
+			   			cout<<UNDERLINED<<toPrint<<RESTORE;
+
+			   		else
+
+			   			cout<<toPrint;
+
+			   		pthread_mutex_unlock(&(This->_cursorMutex));
+
+			   	}else
+
+			    	cout<<toPrint;
 		   
  			}
 
@@ -111,30 +130,16 @@ void* ConsoleOutput::_mainThread(void *This_par){
 void* ConsoleOutput::_blinkThread(void *param){
 
 	ConsoleOutput* This = (ConsoleOutput*)param;
-	uint16_t newIndex, oldIndex = This->vga->cursorPosition();
-
-	uint16_t x = oldIndex % COLS;
-	uint16_t y = floor( oldIndex / COLS );
-
-	// sposto il cursore in _videoMatrix[oldIndex]
-
-	//cout<<"\033["<<x<<';'<<y<<'H';
-	/*
-
-	*/
 
 	while(true){
 	
-		while((newIndex = This->vga->cursorPosition()) == oldIndex){
-			
-			cout<<"\033[?25l";
-			sleep(0.5);
-			cout<<"\033[?25h";
-		}
+		pthread_mutex_lock(&(This->_cursorMutex));
 
-		
+		This->_isBlinking = !This->_isBlinking;
 
-		oldIndex = newIndex;
+		pthread_mutex_unlock(&(This->_cursorMutex));
+
+		sleep(BLINK_TIME);
 
 	}
 

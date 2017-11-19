@@ -31,15 +31,16 @@ private:
 
 	pthread_mutex_t mutex;
 
-	uint16_t* mem;
+	uint16_t* _memoryStart;
 
 public:
 
 	VGAController();
 	void write_reg_byte(io_addr addr, uint8_t val);
+	uint8_t read_reg_byte(io_addr addr);
 	uint16_t cursorPosition();
 
-	void setVMem(uint16_t* m);
+	void setVMem(uint16_t* mem);
 	uint16_t* getVMem();
 
 };

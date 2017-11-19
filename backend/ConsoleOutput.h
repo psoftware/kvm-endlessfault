@@ -17,10 +17,13 @@
 #define COLS 80
 #define ROWS 25
 #define REFRESH_TIME 0.06
+#define BLINK_TIME  1
 #define CLEAR "\033[2J"
 #define STANDARD_BACKGROUND "\033[30;40m"
 #define CURSOR_START "\033[0;0H"
 #define HIDE_CURSOR "\033[?25l"
+#define UNDERLINED "\033[4m"
+#define RESTORE "\033[0m"
 
 using namespace std;
 
@@ -31,7 +34,9 @@ private:
 	pthread_t _videoThread;
 	pthread_t _cursorBlink;
 
-	VGAController* vga;
+	VGAController* _vga;
+	bool _isBlinking;
+	pthread_mutex_t _cursorMutex;
 
 	uint16_t* _videoMatrix;
 
