@@ -129,6 +129,31 @@ void trace_user_program(int vcpu_fd, kvm_run *kr) {
 	logg << "\tSREGS g: " << (unsigned int)sregs.ds.g << endl;
 	logg << "\tSREGS type: " << (unsigned int)sregs.ds.type << endl;
 	logg << "\tSREGS selector: " << (unsigned int)sregs.ds.selector << endl;
+
+	logg << "\tIDT base: " << (unsigned int)sregs.idt.base << endl;
+	logg << "\tIDT limit: " << (unsigned int)sregs.idt.limit << endl;
+
+	kvm_vcpu_events events;
+	if (ioctl(vcpu_fd, KVM_GET_VCPU_EVENTS, &events) < 0) {
+		logg << "trace_user_program KVM_GET_VCPU_EVENTS error: " << strerror(errno) << endl;
+		exit(1);
+	}
+
+	logg << "Exception:" << endl;
+	logg << "\thas_error_code: " << (unsigned int)events.exception.has_error_code << endl;
+	logg << "\terror_code: " << (unsigned int)events.exception.error_code << endl;
+
+	logg << "Interrupt:" << endl;
+	logg << "\tinjected: " << (unsigned int)events.interrupt.injected << endl;
+	logg << "\tnr: " << (unsigned int)events.interrupt.nr << endl;
+	logg << "\tsoft: " << (unsigned int)events.interrupt.soft << endl;
+	logg << "\tshadow: " << (unsigned int)events.interrupt.shadow << endl;
+
+	logg << "NMI:" << endl;
+	logg << "\tinjected: " << (unsigned int)events.nmi.injected << endl;
+	logg << "\tpending: " << (unsigned int)events.nmi.pending << endl;
+	logg << "\tmasked: " << (unsigned int)events.nmi.masked << endl;
+	logg << "\tpad: " << (unsigned int)events.nmi.pad << endl;
 }
 
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
