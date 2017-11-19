@@ -159,16 +159,16 @@ void Bootloader::setup_long_mode(kvm_sregs *sregs)
 	pdpt[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | (pd_addr);
 
 	//tab liv 2
-	for(uint16_t i_liv2=0; i_liv2<3; i_liv2++)
+	for(uint16_t i_liv2=0; i_liv2<512; i_liv2++)
 	{
 		// stiamo lavorando con pagine che indirizzano 2MiB usando bit PS
 		pd[i_liv2] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS | ((((uint64_t)i_liv2)*1024*1024*2));
-		logg << "pd[" << i_liv2 << "]=" << std::hex << pd[i_liv2] << "\n";
+		//logg << "pd[" << i_liv2 << "]=" << std::hex << pd[i_liv2] << "\n";
 	}
 
 	sregs->cr3 = pml4_addr;
 	sregs->cr4 = CR4_PAE;
-	sregs->cr0 = CR0_PE | CR0_MP | CR0_ET | CR0_NE | CR0_WP | CR0_AM;
+	sregs->cr0 = CR0_PE | CR0_ET;
 	sregs->efer = EFER_LME;
 
 	/* We don't set cr0.pg here, because that causes a vm entry
