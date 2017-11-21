@@ -79,7 +79,7 @@ void Bootloader::fill_segment_descriptor(uint64_t *dt, struct kvm_segment *seg)
 		| (uint64_t)seg->s << 44 /* system or code/data */
 		| (uint64_t)seg->dpl << 45 /* Privilege level */
 		| (uint64_t)seg->present << 47
-		| (limit & 0xf0000ULL) << 48 /* Limit bits 16:19 */
+		| ((limit & 0xf0000ULL) >> 16) << 48 /* Limit bits 16:19 */
 		| (uint64_t)seg->avl << 52 /* Available for system software */
 		| (uint64_t)seg->l << 53 /* 64-bit code segment */
 		| (uint64_t)seg->db << 54 /* 16/32-bit segment */
