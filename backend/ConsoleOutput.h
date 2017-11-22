@@ -14,10 +14,12 @@
 #include <math.h>
 #include "../frontend/vgaController.h"
 
+#define ms 1000
+
 #define COLS 80
 #define ROWS 25
-#define REFRESH_TIME 0.06
-#define BLINK_TIME  1
+#define REFRESH_TIME 60*ms
+#define BLINK_TIME  300*ms
 #define CLEAR "\033[2J"
 #define STANDARD_BACKGROUND "\033[30;40m"
 #define CURSOR_START "\033[0;0H"

@@ -119,7 +119,7 @@ void* ConsoleOutput::_mainThread(void *This_par){
 				fflush(stdout);
 			}
         }
-		sleep(REFRESH_TIME);
+		usleep(REFRESH_TIME);
 
 	}
 
@@ -139,8 +139,7 @@ void* ConsoleOutput::_blinkThread(void *param){
 
 		pthread_mutex_unlock(&(This->_cursorMutex));
 
-		sleep(BLINK_TIME);
-
+		usleep(BLINK_TIME);
 	}
 
 }
