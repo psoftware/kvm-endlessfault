@@ -1,6 +1,7 @@
 #include "Bootloader.h"
 #include <iomanip>
 #include "../backend/ConsoleLog.h"
+extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 
 /* CR0 bits */
 #define CR0_PE 1
@@ -104,7 +105,7 @@ void Bootloader::setup_protected_mode(kvm_sregs *sregs)
 	uint64_t *gdt;
 
 	sregs->cr0 = CR0_ET | CR0_PE;
-	sregs->gdt.base = 0x1000;
+	sregs->gdt.base = 0x10000;
 	sregs->gdt.limit = 3 * 8 - 1;
 
 	gdt = (uint64_t *)(guest_mem_ + sregs->gdt.base);
@@ -124,13 +125,13 @@ void Bootloader::setup_protected_mode(kvm_sregs *sregs)
 
 void Bootloader::setup_page_tables(kvm_sregs *sregs)
 {
-	uint64_t pml4_addr = 0x5000;
+	uint64_t pml4_addr = 0x20000;
 	uint64_t *pml4 = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(guest_mem_) + pml4_addr);
 
-	uint64_t pdpt_addr = 0x6000;
+	uint64_t pdpt_addr = 0x30000;
 	uint64_t *pdpt = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(guest_mem_) + pdpt_addr);
 
-	uint64_t pd_addr = 0x7000;
+	uint64_t pd_addr = 0x40000;
 	uint64_t *pd = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(guest_mem_) + pd_addr);
 
 	//tab liv 4
@@ -245,15 +246,16 @@ int Bootloader::run_long_mode()
 	memset(&regs, 0, sizeof(regs));
 	regs.rflags = 2;
 
-	// l'entry point del bootloader è 0x0
-	regs.rip = 0;
+	// carichiamo il codice del bootloader a partire dall'indirizzo 0
+	//memcpy(guest_mem_,bootloader_code,BOOTLOADER_DIM);
+	char bootloader_elf[] = "build/boot64";
+	// l'entry point del bootloader
+	regs.rip = estrai_segmento(bootloader_elf, guest_mem_, 0x10000);
+
 	// il bootloader si aspetta che l'entry_point del programma da avviare sia in %rdi
 	regs.rdi = entry_point_;
 	// va sistemato, E' COMPETENZA DEL BOOTLOADER
 	regs.rsp = start_stack_;
-
-	// carichiamo il codice del bootloader a partire dall'indirizzo 0
-	memcpy(guest_mem_,bootloader_code,BOOTLOADER_DIM);
 
 	if (ioctl(vcpu_fd_, KVM_SET_REGS, &regs) < 0) {
 		perror("KVM_SET_REGS");

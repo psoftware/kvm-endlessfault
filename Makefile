@@ -14,7 +14,7 @@ ELF_HEADER_FILES := $(wildcard elf/*.h)
 
 ## -- linking
 
-all: kvm build/prog_prova build/keyboard_program build/ricorsivo
+all: kvm build/boot64 build/prog_prova build/keyboard_program build/ricorsivo
 
 kvm: kvm.o bootloader/Bootloader.o bootloader/bootloader_code.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
 	g++ kvm.o bootloader/Bootloader.o bootloader/bootloader_code.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) -o kvm $(LD_FLAGS)
@@ -49,6 +49,9 @@ bootloader/Bootloader.o: bootloader/Bootloader.cpp bootloader/Bootloader.h
 
 bootloader/bootloader_code.o: bootloader/bootloader_code.cpp
 	g++ -c bootloader/bootloader_code.cpp -o bootloader/bootloader_code.o $(COMM_CFLAGS)
+
+build/boot64: bootloader/boot64.s
+	g++ -m32 -nostdlib -fno-exceptions -g -fno-rtti -fno-stack-protector -mno-red-zone -gdwarf-2 -fpic -m32 -Ttext=0 bootloader/boot64.s -o build/boot64 -Wl,-fuse-ld=gold
 clean:
 	rm -f *.o frontend/*.o backend/*.o elf/*.o
 	rm -f kvm
