@@ -92,7 +92,7 @@ void fetch_application_result(int vcpu_fd, kvm_run *kr) {
 	 * obtain the 'special registers' with KVM_GET_SREGS).
 	 */
 
-	logg << "Risultato programma (keycode): " << regs.rax << endl;
+	logg << std::dec << "Risultato programma (keycode): " << regs.rax << endl;
 }
 
 void trace_user_program(int vcpu_fd, kvm_run *kr) {
