@@ -12,6 +12,9 @@ using namespace std;
 
 //typedef unsigned int uint32_t;
 
+#include "../backend/ConsoleLog.h"
+extern ConsoleLog& logg;
+
 // interprete per formato elf
 class InterpreteElf64: public Interprete {
 public:
@@ -202,7 +205,7 @@ bool EseguibileElf64::SegmentoElf64::copia_pagina(void* dest)
 
 uint64_t EseguibileElf64::SegmentoElf64::copia_segmento(void *dest)
 {
-	if (fseek(padre->pexe, curr_offset, SEEK_SET) != 0) {
+	if (fseek(padre->pexe, ph->p_offset, SEEK_SET) != 0) {
 		fprintf(stderr, "errore nel file ELF\n");
 		exit(EXIT_FAILURE);
 	}
@@ -211,8 +214,11 @@ uint64_t EseguibileElf64::SegmentoElf64::copia_segmento(void *dest)
 	uint64_t memsz = this->dimensione();
 	uint64_t read_count = fread(dest, 1, filesz, padre->pexe);
 
+	logg << "copia_segmento: filesz " << std::dec << filesz << " curr_offset " << curr_offset <<endl;
+
 	if(this->dimensione() > this->dimensione_filesz())
 	{
+		logg << "azzero ulteriori " << std::hex << (unsigned long)((uint8_t*)dest + filesz) << endl;
 		memset((uint8_t*)dest + filesz, 0, memsz-filesz);
 		read_count += memsz-filesz;
 	}
