@@ -87,6 +87,9 @@ void Bootloader::fill_segment_descriptor(uint64_t *dt, struct kvm_segment *seg)
 		| (uint64_t)seg->db << 54 /* 16/32-bit segment */
 		| (uint64_t)seg->g << 55 /* 4KB granularity */
 		| (seg->base & 0xff000000ULL) << 56; /* Base bits 24:31 */
+
+	/* logg << "filling gdt[" << std::dec << index << "]: " << std::hex << std::setfill('0') << std::setw(2) <<(unsigned long)dt[index]
+	<< " selector " << seg->selector << "\n";*/
 }
 
 void Bootloader::setup_protected_mode(kvm_sregs *sregs)
@@ -145,7 +148,7 @@ void Bootloader::setup_page_tables(kvm_sregs *sregs)
 	{
 		// stiamo lavorando con pagine che indirizzano 2MiB usando bit PS
 		pd[i_liv2] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS | ((((uint64_t)i_liv2)*1024*1024*2));
-		//logg << "pd[" << i_liv2 << "]=" << std::hex << pd[i_liv2] << "\n";
+		//logg << "pd[" << std::dec << i_liv2 << "]=" << std::hex << pd[i_liv2] << "\n";
 	}
 
 	sregs->cr3 = pml4_addr;

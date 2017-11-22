@@ -130,8 +130,10 @@ void trace_user_program(int vcpu_fd, kvm_run *kr) {
 	logg << "\tSREGS type: " << (unsigned int)sregs.ds.type << endl;
 	logg << "\tSREGS selector: " << (unsigned int)sregs.ds.selector << endl;
 
-	logg << "\tIDT base: " << (unsigned int)sregs.idt.base << endl;
+	logg << "\tIDT base: " << (void *)sregs.idt.base << endl;
 	logg << "\tIDT limit: " << (unsigned int)sregs.idt.limit << endl;
+	logg << "\tGDT base: " << (void *)sregs.gdt.base << endl;
+	logg << "\tGDT limit: " << (unsigned int)sregs.gdt.limit << endl;
 
 	kvm_vcpu_events events;
 	if (ioctl(vcpu_fd, KVM_GET_VCPU_EVENTS, &events) < 0) {
