@@ -1,4 +1,5 @@
 #include "Bootloader.h"
+#include <iomanip>
 #include "../backend/ConsoleLog.h"
 
 /* CR0 bits */
@@ -97,59 +98,39 @@ void Bootloader::setup_protected_mode(kvm_sregs *sregs)
 	seg.dpl = 0;
 	seg.db = 1;
 	seg.s = 1; /* Code/data */
-	seg.l = 0;
+	seg.l = 0; /* non è un segmento da 64 bit */
 	seg.g = 1; /* 4KB granularity */
 
 	uint64_t *gdt;
 
-	sregs->cr0 |= CR0_PE; /* enter protected mode */
+	sregs->cr0 = CR0_ET | CR0_PE;
 	sregs->gdt.base = 0x1000;
 	sregs->gdt.limit = 3 * 8 - 1;
 
 	gdt = (uint64_t *)(guest_mem_ + sregs->gdt.base);
 	/* gdt[0] is the null segment */
 
-	seg.type = 11; /* Code: execute, read, accessed */
+	seg.type = 10; /* Code: execute, read */
 	seg.selector = 1 << 3;
 	fill_segment_descriptor(gdt, &seg);
 	sregs->cs = seg;
 
 	seg.type = 3; /* Data: read/write, accessed */
 	seg.selector = 2 << 3;
+	seg.limit = 0xffffffff;
 	fill_segment_descriptor(gdt, &seg);
 	sregs->ds = sregs->es = sregs->fs = sregs->gs = sregs->ss = seg;
 }
 
-void Bootloader::setup_64bit_code_segment(unsigned char *data_mem, struct kvm_sregs *sregs)
+void Bootloader::setup_page_tables(kvm_sregs *sregs)
 {
-	kvm_segment seg;
-	memset(&seg, 0, sizeof(seg));
-	seg.base = 0;
-	seg.limit = 0xffffffff;
-	seg.selector = 3 << 3;
-	seg.present = 1;
-	seg.type = 11; /* Code: execute, read, accessed */
-	seg.dpl = 0;
-	seg.db = 0;
-	seg.s = 1; /* Code/data */
-	seg.l = 1;
-	seg.g = 1; /* 4KB granularity */
-	uint64_t *gdt = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(data_mem) + sregs->gdt.base);
-
-	sregs->gdt.limit = 4 * 8 - 1;
-
-	fill_segment_descriptor(gdt, &seg);
-}
-
-void Bootloader::setup_long_mode(kvm_sregs *sregs)
-{
-	uint64_t pml4_addr = 0x2000;
+	uint64_t pml4_addr = 0x5000;
 	uint64_t *pml4 = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(guest_mem_) + pml4_addr);
 
-	uint64_t pdpt_addr = 0x3000;
+	uint64_t pdpt_addr = 0x6000;
 	uint64_t *pdpt = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(guest_mem_) + pdpt_addr);
 
-	uint64_t pd_addr = 0x4000;
+	uint64_t pd_addr = 0x7000;
 	uint64_t *pd = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(guest_mem_) + pd_addr);
 
 	//tab liv 4
@@ -167,14 +148,16 @@ void Bootloader::setup_long_mode(kvm_sregs *sregs)
 	}
 
 	sregs->cr3 = pml4_addr;
+
+	/*sregs->cr3 = pml4_addr;
 	sregs->cr4 = CR4_PAE;
 	sregs->cr0 = CR0_PE | CR0_ET;
 	sregs->efer = EFER_LME;
 
-	/* We don't set cr0.pg here, because that causes a vm entry
-	   failure. It's not clear why. Instead, we set it in the VM
-	   code. */
-	setup_64bit_code_segment(guest_mem_, sregs);
+	// We don't set cr0.pg here, because that causes a vm entry
+	// failure. It's not clear why. Instead, we set it in the VM
+	// code.
+	setup_64bit_code_segment(guest_mem_, sregs);*/
 }
 
 int Bootloader::run_protected_mode()
@@ -197,7 +180,7 @@ int Bootloader::run_protected_mode()
 	}
 
 	memset(&regs, 0, sizeof(regs));
-	/* Clear all FLAGS bits, except bit 1 which is always set. */
+	// Clear all FLAGS bits, except bit 1 which is always set.
 	regs.rflags = 2;
 	regs.rip = entry_point_;
 	regs.rsp = start_stack_;
@@ -210,29 +193,32 @@ int Bootloader::run_protected_mode()
 		exit(1);
 	}
 
-
-
-/*	memcpy(vm->mem, code32, code32_end-code32);
-
-	if (ioctl(vcpu->fd, KVM_RUN, 0) < 0) {
-		perror("KVM_RUN");
-		exit(1);
-	}
-
-	if (vcpu->kvm_run->exit_reason != KVM_EXIT_HLT) {
-		fprintf(stderr,
-			"Got exit_reason %d, expected KVM_EXIT_HLT (%d)\n",
-			vcpu->kvm_run->exit_reason, KVM_EXIT_HLT);
-		exit(1);
-	}
-
-	return check(vm, vcpu, 4); */
 	return 0;
 }
 
 
 int Bootloader::run_long_mode()
 {
+	/* ====== QEMU RISULTA AVERE QUESTI VALORI NEI REGISTRI ======
+	EAX=2badb002 EBX=00009500 ECX=00100100 EDX=00000511
+	ESI=00000000 EDI=0010a000 EBP=00000000 ESP=00006f00
+	EIP=00100101 EFL=00000006 [-----P-] CPL=0 II=0 A20=1 SMM=0 HLT=1
+	ES =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+	CS =0008 00000000 ffffffff 00cf9a00 DPL=0 CS32 [-R-]
+	SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+	DS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+	FS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+	GS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+	LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+	TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
+	GDT=     000caa68 00000027
+	IDT=     00000000 000003ff
+	CR0=00000011 CR2=00000000 CR3=00000000 CR4=00000000
+	DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
+	DR6=00000000ffff0ff0 DR7=0000000000000400
+	EFER=0000000000000000
+	*/
+
 	struct kvm_sregs sregs;
 	struct kvm_regs regs;
 
@@ -243,21 +229,30 @@ int Bootloader::run_long_mode()
 		exit(1);
 	}
 
+	// passiamo alla modalità protetta
 	setup_protected_mode(&sregs);
-	setup_long_mode(&sregs);
 
-    if (ioctl(vcpu_fd_, KVM_SET_SREGS, &sregs) < 0) {
+	// creiamo la finestra di memoria (1GiB)
+	setup_page_tables(&sregs);
+
+	// inoltriamo le modifiche fatte ai registri dei segmenti a KVM
+	if (ioctl(vcpu_fd_, KVM_SET_SREGS, &sregs) < 0) {
 		perror("KVM_SET_SREGS");
 		exit(1);
-	} 
+	}
 
+	// inizializziamo i registri
 	memset(&regs, 0, sizeof(regs));
-	/* Clear all FLAGS bits, except bit 1 which is always set. */
 	regs.rflags = 2;
-	//regs.rip = entry_point_;
+
+	// l'entry point del bootloader è 0x0
+	regs.rip = 0;
+	// il bootloader si aspetta che l'entry_point del programma da avviare sia in %rdi
 	regs.rdi = entry_point_;
+	// va sistemato, E' COMPETENZA DEL BOOTLOADER
 	regs.rsp = start_stack_;
 
+	// carichiamo il codice del bootloader a partire dall'indirizzo 0
 	memcpy(guest_mem_,bootloader_code,BOOTLOADER_DIM);
 
 	if (ioctl(vcpu_fd_, KVM_SET_REGS, &regs) < 0) {
@@ -265,21 +260,6 @@ int Bootloader::run_long_mode()
 		exit(1);
 	}
 
-/*	memcpy(vm->mem, code64, code64_end-code64);
-
-	if (ioctl(vcpu->fd, KVM_RUN, 0) < 0) {
-		perror("KVM_RUN");
-		exit(1);
-	}
-
-	if (vcpu->kvm_run->exit_reason != KVM_EXIT_HLT) {
-		fprintf(stderr,
-			"Got exit_reason %d, expected KVM_EXIT_HLT (%d)\n",
-			vcpu->kvm_run->exit_reason, KVM_EXIT_HLT);
-		exit(1);
-	}
-
-	return check(vm, vcpu, 4); */
 	return 0;
 }
 

@@ -20,9 +20,8 @@ private:
 	uint64_t entry_point_;
 	uint64_t start_stack_;
 	void fill_segment_descriptor(uint64_t *dt, struct kvm_segment *seg);
-	void setup_64bit_code_segment(unsigned char *data_mem, struct kvm_sregs *sregs);
 	void setup_protected_mode(struct kvm_sregs *sregs);
-	void setup_long_mode(struct kvm_sregs *sregs);
+	void setup_page_tables(kvm_sregs *sregs);
 public:
 	Bootloader(int vcpu_fd, unsigned char *guest_mem, uint64_t entry_point, uint64_t start_stack);
 	int run_long_mode();
