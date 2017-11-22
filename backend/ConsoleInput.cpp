@@ -120,7 +120,7 @@ ConsoleInput::encode_table ConsoleInput::enc_t = {
 			'a', 's', 'd', 'f', 'g', 'h', 'j', 'k',
 			'l', '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm',
 			',', '.', '-', '<',
-			' ', '\n', '\b', 0x1B
+			' ', '\r', '\b', 0x1B
 		},
 		{	// tabmai
 			'!', '"', '@', '$', '%', '&', '/', '(', ')', '=',
@@ -129,7 +129,7 @@ ConsoleInput::encode_table ConsoleInput::enc_t = {
 			'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K',
 			'L', '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M',
 			';', ':', '_', '>',
-			' ', '\r', '\b', 0x1B
+			' ', '\n', '\b', 0x1B
 		}
 	};
 
