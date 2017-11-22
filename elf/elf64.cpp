@@ -158,7 +158,7 @@ uint64_t EseguibileElf64::SegmentoElf64::ind_virtuale() const
 
 uint64_t EseguibileElf64::SegmentoElf64::dimensione_filesz() const
 {
-	return ph->p_memsz;
+	return ph->p_filesz;
 }
 
 uint64_t EseguibileElf64::SegmentoElf64::dimensione() const
@@ -214,7 +214,7 @@ uint64_t EseguibileElf64::SegmentoElf64::copia_segmento(void *dest)
 	uint64_t memsz = this->dimensione();
 	uint64_t read_count = fread(dest, 1, filesz, padre->pexe);
 
-	logg << "copia_segmento: filesz " << std::dec << filesz << " curr_offset " << curr_offset <<endl;
+	logg << "copia_segmento: filesz " << std::dec << filesz << " curr_offset " << curr_offset << " memsz " << memsz <<endl;
 
 	if(this->dimensione() > this->dimensione_filesz())
 	{
