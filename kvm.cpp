@@ -9,6 +9,7 @@
 
 #include "frontend/IODevice.h"
 #include "frontend/keyboard.h"
+#include "frontend/serial_port.h"
 #include "backend/ConsoleLog.h"
 #include "backend/ConsoleInput.h"
 #include "bootloader/Bootloader.h"
@@ -47,6 +48,9 @@ ConsoleLog& logg = *ConsoleLog::getInstance();
 // tastiera emulata (frontend)
 keyboard keyb;
 
+// COM1 emulata (frontend)
+serial_port* com1;
+
 // gestione input console (backend)
 ConsoleInput* console;
 
@@ -61,6 +65,9 @@ void initIO()
 
 	// avviamo il thread che si occuperà di gestire l'input della console
 	console->startEventThread();
+
+	// inizializziamo la porta seriale
+	com1 = new serial_port(0x3f8, logg);
 
 	vga.setVMem((uint16_t*)(guest_physical_memory + 0xB8000));
 	co = ConsoleOutput::getInstance();
@@ -371,6 +378,14 @@ int main(int argc, char **argv)
 					else if(kr->io.direction == KVM_EXIT_IO_IN)
 							*io_param = vga.read_reg_byte(kr->io.port);
 				}
+				// ======== Porta Seriale Primaria ========
+				else if (kr->io.size == 1 && kr->io.count == 1 && (kr->io.port >= 0x03f8 && kr->io.port <= 0x03ff))
+				{
+					if(kr->io.direction == KVM_EXIT_IO_OUT)
+						com1->write_reg_byte(kr->io.port, *io_param);
+					else if(kr->io.direction == KVM_EXIT_IO_IN)
+							*io_param = com1->read_reg_byte(kr->io.port);
+				}
 				// ======== Porta Seriale Secondaria ========
 				else if (kr->io.size == 1 && kr->io.count == 1 && kr->io.port == 0x02F8 && kr->io.direction == KVM_EXIT_IO_OUT)
 				{
@@ -397,7 +412,7 @@ int main(int argc, char **argv)
 						<< " len=" << (uint32_t)kr->mmio.len
 						<< " data=" << (uint32_t)((kr->mmio.data[3] << 24) | (kr->mmio.data[2] << 16) | (kr->mmio.data[1] << 8) | kr->mmio.data[0])
 						<< " is_write=" << (short)kr->mmio.is_write << endl;
-				trace_user_program(vcpu_fd, kr);
+				//trace_user_program(vcpu_fd, kr);
 				//return 1;
 				break;
 			case KVM_EXIT_SHUTDOWN:
