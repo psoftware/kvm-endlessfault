@@ -6,6 +6,7 @@
 #include <cerrno>
 #include <cstring>
 #include <sys/mman.h>
+#include <signal.h>
 
 #include "frontend/IODevice.h"
 #include "frontend/keyboard.h"
@@ -52,37 +53,44 @@ keyboard keyb;
 serial_port* com1;
 
 // gestione input console (backend)
-ConsoleInput* console;
+ConsoleInput* console_in;
 
-ConsoleOutput* co;
+ConsoleOutput* console_out;
 VGAController vga;
+
+void endIO(int val)
+{
+	// questa operazione va fatta perchè altrimenti la console
+	// non tornebbe nello stato di funzionamento precedente
+	// all'instanziazione dell'oggetto ConsoleInput
+	console_out->resetConsole();
+	console_in->resetConsole();
+
+	// chiudiamo il programma
+	exit(0);
+}
 
 void initIO()
 {
 	// colleghiamo la tastiera emulata all'input della console
-	console = ConsoleInput::getInstance();
-	console->attachKeyboard(&keyb);
+	console_in = ConsoleInput::getInstance();
+	console_in->attachKeyboard(&keyb);
 
 	// avviamo il thread che si occuperà di gestire l'input della console
-	console->startEventThread();
+	console_in->startEventThread();
 
 	// inizializziamo la porta seriale
 	com1 = new serial_port(0x3f8, logg);
 
 	vga.setVMem((uint16_t*)(guest_physical_memory + 0xB8000));
-	co = ConsoleOutput::getInstance();
-	co->attachVGA(&vga);
-	co->startThread();
+	console_out = ConsoleOutput::getInstance();
+	console_out->attachVGA(&vga);
+	console_out->startThread();
+
+	atexit([](){endIO(0);});
+	signal(SIGINT, endIO);
 }
 
-void endIO()
-{
-	// questa operazione va fatta perchè altrimenti la console
-	// non tornebbe nello stato di funzionamento precedente
-	// all'instanziazione dell'oggetto ConsoleInput
-	console->resetConsole();
-	co->resetConsole();
-}
 
 // funzione chiamata su HLT del programma della vm per ottenere
 // un risultato dal programma
@@ -437,7 +445,7 @@ int main(int argc, char **argv)
 	}
 
 	// procediamo con la routine di ripristino dell'IO
-	endIO();
+	endIO(0);
 
 	return 0;
 }

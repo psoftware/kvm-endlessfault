@@ -19,6 +19,9 @@ void ConsoleOutput::resetConsole()
 {
 	// resettiamo lo stato della console utilizzando l'oggetto salvatoci nel costruttore
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &tty_attr_old);
+
+	// lanciamo un reset console
+	printf("\033c");
 }
 
 
