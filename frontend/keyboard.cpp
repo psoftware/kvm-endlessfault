@@ -90,7 +90,9 @@ void keyboard::insert_keycode_event(uint8_t keycode)
 {
 	pthread_mutex_lock(&mutex);
 
+	#ifdef DEBUG_LOG
 	logg << "keyboard: ricevuto " << (unsigned int)keycode << endl;
+	#endif
 
 	if(!enabled)
 		goto err;
@@ -103,7 +105,9 @@ void keyboard::insert_keycode_event(uint8_t keycode)
 	}
 
 	// inseriamo il keycode nel buffer (coda)
+	#ifdef DEBUG_LOG
 	logg << "keyboard: inserito in coda" << endl;
+	#endif
 
 	internal_buffer[buffer_head_pointer] = keycode;
 	buffer_head_pointer = (buffer_head_pointer + 1) % INTERNAL_BUFFER_SIZE;

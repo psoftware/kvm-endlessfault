@@ -33,7 +33,9 @@ uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size)
 	}
 
 	entry_point = exe->entry_point();
+	#ifdef DEBUG_LOG
 	logg << "entry_point:" << std::hex << entry_point << endl;
+	#endif
 
 
 	// dall'intestazione, calcoliamo l'inizio della tabella dei segmenti di programma
@@ -44,8 +46,9 @@ uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size)
 		uint64_t dimensione = s->dimensione();
 		uint64_t end_addr = ind_virtuale + dimensione;
 
-		logg << "==> seg dim " << std::dec << dimensione << " addr " << std::hex <<
-			ind_virtuale << "\n";
+		#ifdef DEBUG_LOG
+		logg << "==> seg dim " << std::dec << dimensione << " addr " << std::hex << ind_virtuale << "\n";
+		#endif
 
 		// ==== DA VALUTARE SE VA BENE
 		if(end_addr > dest_size)
@@ -55,16 +58,22 @@ uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size)
 		}
 		else if(ind_virtuale < 0x100000)
 		{
+			#ifdef DEBUG_LOG
 			logg << "WARNING: è stato caricato un segmento nella zona 0x0 - 0x100000" << endl;
+			#endif
 			//continue;
 		}
 		// ====
-		logg << "byte copiati in m1 " << std::dec << s->copia_segmento((uint8_t*)dest + ind_virtuale) << endl;
-		#ifndef SUPPRESS_DEBUG
-		for(int i=ind_virtuale; i<ind_virtuale+dimensione; i++){
+
+		int read_bytes = s->copia_segmento((uint8_t*)dest + ind_virtuale);
+
+		#ifdef DEBUG_LOG
+		logg << "byte copiati in m1 " << std::dec << read_bytes << endl;
+
+		/*for(int i=ind_virtuale; i<ind_virtuale+dimensione; i++){
 			logg << std::hex << (unsigned int)((unsigned char*)dest)[i];
 		}
-		logg << endl;
+		logg << endl;*/
 		#endif
 	}
 	fclose(file);

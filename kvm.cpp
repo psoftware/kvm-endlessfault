@@ -173,6 +173,14 @@ void trace_user_program(int vcpu_fd, kvm_run *kr) {
 	logg << "\tpad: " << (unsigned int)events.nmi.pad << endl;
 }
 
+void dump_memory(uint64_t offset, int size)
+{
+	logg << endl << "================== Memory Dump (0x" << std::hex << (unsigned long)offset << " size " << std::dec << size <<" B) ==================" << endl;
+	for(int i=0; i<size; i++)
+		logg << std::setfill('0') << std::setw(2) << std::hex << (unsigned int)((uint8_t*)guest_physical_memory + offset)[i];
+	logg << endl << "=======================================================================" << endl;
+}
+
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 int main(int argc, char **argv)
 {
@@ -325,16 +333,8 @@ int main(int argc, char **argv)
 	bootloader.run_long_mode();
 	//bootloader.run_protected_mode();
 
-	#ifndef SUPPRESS_DEBUG
-	uint64_t dump_addr = 0x200100;
-	logg << endl << "================== Memory Dump (" << std::hex << dump_addr << " 4KB) ==================" << endl;
-	for(int i=dump_addr; i<dump_addr+512; i++)
-	{
-		fprintf(stderr, "%02x", (unsigned int)((unsigned char*)guest_physical_memory)[i]);
-		logg << std::setfill('0') << std::setw(2) << std::hex << (unsigned int)((unsigned char*)guest_physical_memory)[i];
-		//cerr << std::hex << (unsigned int)((unsigned char*)guest_physical_memory)[i];
-	}
-	logg << endl << "=================================================" << endl;
+	#ifdef DEBUG_LOG
+	dump_memory(0x200000, 512);
 	#endif
 
 	// a questo punto possiamo inizializzare le strutture per l'emulazione dei dispositivi di IO

@@ -92,9 +92,13 @@ void* ConsoleInput::_mainThread(void *This_par)
 		// dell'evento di keydown e in seguito keyup (per emulare l'evento di press)
 		if(newkeycode)
 		{
+			#ifdef DEBUG_LOG
 			logg << "console: inoltrato (down) " << (unsigned int)newkeycode << endl;
+			#endif
 			This->attached_keyboard->insert_keycode_event(newkeycode);
+			#ifdef DEBUG_LOG
 			logg << "console: inoltrato (up)" << (unsigned int)(newkeycode | 0x80) << endl;
+			#endif
 			This->attached_keyboard->insert_keycode_event(newkeycode | 0x80);
 		}
 	}

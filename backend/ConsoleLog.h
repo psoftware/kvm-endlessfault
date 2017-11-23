@@ -4,8 +4,7 @@
 #include <iostream>
 #include <fstream>
 
-#define SUPPRESS_DEBUG
-
+#define DEBUG_LOG
 
 class ConsoleLog {
 private:

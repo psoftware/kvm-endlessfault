@@ -214,11 +214,15 @@ uint64_t EseguibileElf64::SegmentoElf64::copia_segmento(void *dest)
 	uint64_t memsz = this->dimensione();
 	uint64_t read_count = fread(dest, 1, filesz, padre->pexe);
 
+	#ifdef DEBUG_LOG
 	logg << "copia_segmento: filesz " << std::dec << filesz << " curr_offset " << curr_offset << " memsz " << memsz <<endl;
+	#endif
 
 	if(this->dimensione() > this->dimensione_filesz())
 	{
+		#ifdef DEBUG_LOG
 		logg << "azzero ulteriori " << std::hex << (unsigned long)((uint8_t*)dest + filesz) << endl;
+		#endif
 		memset((uint8_t*)dest + filesz, 0, memsz-filesz);
 		read_count += memsz-filesz;
 	}
