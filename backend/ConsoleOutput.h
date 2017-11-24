@@ -9,8 +9,8 @@
 #include "fcntl.h"
 #include "sys/ioctl.h"
 #include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <math.h>
 #include "../frontend/vgaController.h"
 

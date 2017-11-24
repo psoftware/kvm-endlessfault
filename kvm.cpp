@@ -13,10 +13,11 @@
 #include "frontend/serial_port.h"
 #include "backend/ConsoleLog.h"
 #include "backend/ConsoleInput.h"
+#include "debug-server/DebugServer.h"
 #include "bootloader/Bootloader.h"
-
 #include "backend/ConsoleOutput.h"
 #include "frontend/vgaController.h"
+#include "INIReader.h"
 
 using namespace std;
 
@@ -37,6 +38,7 @@ using namespace std;
  * in /usr/include/asm/kvm.h, included by this one.
  */
 #include <linux/kvm.h>
+
 
 // memoria del guest
 const uint32_t GUEST_PHYSICAL_MEMORY_SIZE = 8*1024*1024; // Memoria Fisica del guest a 2MB
@@ -281,6 +283,13 @@ int main(int argc, char **argv)
 	// carichiamo l'eseguibile da file
 	uint64_t entry_point = estrai_segmento(elf_file_path, (void*)guest_physical_memory, GUEST_PHYSICAL_MEMORY_SIZE);
 
+	// Avviamo il server di debug
+	try {
+		DebugServer debugs(5555,GUEST_PHYSICAL_MEMORY_SIZE,guest_physical_memory);
+		debugs.start();
+	} catch( ... ) {
+		cout << "impossibile aprire il server di debug" << endl;
+	}
 	/* now we add a virtual cpu (vcpu) to our machine. We obtain yet
 	 * another open file descriptor, which we can use to
 	 * interact with the vcpu. Note that we can have several
