@@ -15,8 +15,8 @@ class DebugServer
 	std::thread main_thread_;
 public: 
 	DebugServer(uint16_t port, uint32_t mem_size, void *mem_ptr);
-	static void _main_fun(int serv_sockt, DebugServer *d);
-	static void _worker_fun(int sockt, DebugServer *d);
+	static void _main_fun(int serv_sockt, std::vector<std::thread> &peers, uint32_t mem_size, void *mem_ptr);
+	static void _worker_fun(int sockt, uint32_t mem_size, void *mem_ptr);
 	void start();
 };
 

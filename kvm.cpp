@@ -186,11 +186,15 @@ void dump_memory(uint64_t offset, int size)
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 int main(int argc, char **argv)
 {
+
+	uint16_t serv_port;
+
 	// controllo parametri in ingresso
 	if(argc != 2 && (argc ==1 || argc == 3 || (argc == 4 && strcmp(argv[2], "-logfile"))) ) {
 		cout << "Formato non corretto. Uso: kvm <elf file> [-logfile filefifo]" << endl;
 		return 1;
 	}
+
 
 	// ci è stato richiesto di utilizzare un file specifico per il logging
 	if(argc == 4 && !strcmp(argv[2], "-logfile"))
@@ -207,6 +211,17 @@ int main(int argc, char **argv)
 	}
 	fclose(elf_file);
 
+	// carico file di configurazione
+	INIReader reader("config.ini");
+
+    if (reader.ParseError() < 0) {
+        cout << "Can't load 'config.ini'\n";
+        return 1;
+    }
+
+    serv_port = reader.GetInteger("debug-server", "port", -1);
+    cout << "Config loaded from 'config.ini': port=" << serv_port << endl;
+             
 	/* the first thing to do is to open the /dev/kvm pseudo-device,
 	 * obtaining a file descriptor.
 	 */
@@ -285,7 +300,7 @@ int main(int argc, char **argv)
 
 	// Avviamo il server di debug
 	try {
-		DebugServer debugs(5555,GUEST_PHYSICAL_MEMORY_SIZE,guest_physical_memory);
+		DebugServer debugs(serv_port,GUEST_PHYSICAL_MEMORY_SIZE,guest_physical_memory);
 		debugs.start();
 	} catch( ... ) {
 		cout << "impossibile aprire il server di debug" << endl;
