@@ -16,7 +16,7 @@ DebugServer::DebugServer(uint16_t port, uint32_t mem_size, void *mem_ptr)
 	
 }
 
-void DebugServer::_main_fun(int serv_sockt, vector<thread> &peers, uint32_t mem_size, void *mem_ptr)
+void DebugServer::_main_fun(int serv_sockt, vector<thread *> &peers, uint32_t mem_size, void *mem_ptr)
 {
 	ConnectionTCP c;
 	while(true)
@@ -25,8 +25,7 @@ void DebugServer::_main_fun(int serv_sockt, vector<thread> &peers, uint32_t mem_
 		if( accept_serverTCP(serv_sockt, &c) != -1 )
 		{
 			logg << "nuovo peer" << endl;
-			/*peers.push_back(*/thread t(&DebugServer::_worker_fun,c.socket,mem_size,mem_ptr)/*)*/;
-			t.detach();
+			peers.push_back(new thread(&DebugServer::_worker_fun,c.socket,mem_size,mem_ptr));
 		}
 	}
 }
