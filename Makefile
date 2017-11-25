@@ -8,8 +8,7 @@ FRONTEND_OBJ_FILES = $(patsubst frontend/%.cpp,frontend/%.o,$(FRONTEND_CPP_FILES
 BACKEND_CPP_FILES := $(wildcard backend/*.cpp)
 BACKEND_OBJ_FILES = $(patsubst backend/%.cpp,backend/%.o,$(BACKEND_CPP_FILES))
 
-DEBUGSERVER_CPP_FILES := debug-server/net_wrapper.c debug-server/DebugServer.cpp
-DEBUGSERVER_OBJ_FILES = debug-server/DebugServer.o debug-server/net_wrapper.o
+DEBUGSERVER_OBJ_FILES = debug-server/DebugServer.o debug-server/net_wrapper.o debug-server/messages.o
 
 ELF_OBJ_FILES = elf/elf32.o elf/elf64.o elf/estrattore.o elf/interp.o
 ELF_HEADER_FILES := $(wildcard elf/*.h)
@@ -31,8 +30,8 @@ build/keyboard_program: target/keyboard_program.s
 build/ricorsivo: target/ricorsivo.c target/prog_prova.s
 	gcc $(ELFPROG_CFLAGS) target/ricorsivo.c target/prog_prova.s -o build/ricorsivo
 
-debug-client/debug_client: debug-client/debug_client.o debug-server/net_wrapper.o
-	g++ debug-client/debug_client.o debug-server/net_wrapper.o -o debug-client/debug_client
+debug-client/debug_client: debug-client/debug_client.o debug-server/net_wrapper.o debug-server/messages.o
+	g++ debug-client/debug_client.o debug-server/net_wrapper.o debug-server/messages.o -o debug-client/debug_client
 ## --compilazione
 
 kvm.o: kvm.cpp
@@ -46,6 +45,9 @@ frontend/%.o: frontend/%.cpp frontend/%.h
 
 backend/%.o: backend/%.cpp backend/%.h
 	g++ -c -o $@ $< $(COMM_CFLAGS)
+
+debug-server/messages.o: debug-server/messages.c debug-server/messages.h
+	gcc -c debug-server/messages.c -o debug-server/messages.o
 
 debug-server/%.o: debug-server/%.cpp debug-server/%.h 
 	g++ -c -o $@ $< $(COMM_CFLAGS)
