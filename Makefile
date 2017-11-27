@@ -1,4 +1,4 @@
-COMM_CFLAGS=-std=gnu++14 -g -no-pie
+COMM_CFLAGS=-std=gnu++14
 LD_FLAGS=-pthread
 ELFPROG_CFLAGS=-nostdlib -Ttext=0x200000 -fno-asynchronous-unwind-tables -m64 -Wl,--build-id=none -no-pie -Wl,-fuse-ld=gold
 
@@ -30,9 +30,9 @@ build/keyboard_program: target/keyboard_program.s
 build/ricorsivo: target/ricorsivo.c target/prog_prova.s
 	gcc $(ELFPROG_CFLAGS) target/ricorsivo.c target/prog_prova.s -o build/ricorsivo
 
-debug-client/debug_client: debug-client/debug_client.o debug-server/net_wrapper.o debug-server/messages.o
-	g++ debug-client/debug_client.o debug-server/net_wrapper.o debug-server/messages.o -o debug-client/debug_client
-## --compilazione
+debug-client/debug_client: debug-client/debug_client.o debug-server/net_wrapper.o debug-server/messages.o backend/ConsoleLog.o
+	g++ debug-client/debug_client.o debug-server/net_wrapper.o debug-server/messages.o backend/ConsoleLog.o -o debug-client/debug_client $(COMM_CFLAGS)
+#--ompilazione
 
 kvm.o: kvm.cpp
 	g++ -c kvm.cpp -o kvm.o $(COMM_CFLAGS)
