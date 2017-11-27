@@ -42,12 +42,10 @@ void convert_to_host_order(void* msg)
 		case SERVER_QUIT:
 		case REQ_INFO:
 		case ACCPT_DUMP_MEM:
-			((simple_mess*)msg)->t = ntohl(((req_dump_mem*)msg)->t);
 			((simple_mess*)msg)->timestamp = ntohl(((simple_mess*)msg)->timestamp);
 			break;
 		
 		case REQ_DUMP_MEM:
-			((req_dump_mem*)msg)->t = ntohl(((req_dump_mem*)msg)->t);
 			((req_dump_mem*)msg)->timestamp = ntohl(((req_dump_mem*)msg)->timestamp);
 			((req_dump_mem*)msg)->start_addr = NTOHLL(((req_dump_mem*)msg)->start_addr);
 			((req_dump_mem*)msg)->end_addr = NTOHLL(((req_dump_mem*)msg)->end_addr);

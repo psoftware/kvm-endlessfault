@@ -1,6 +1,9 @@
+#include <iostream>
 #include <stdio.h>
 #include "../debug-server/net_wrapper.h"
 #include "../debug-server/messages.h"
+
+using namespace std;
 
 void stampa_indirizzo( struct sockaddr_in *addr )
 {
@@ -57,6 +60,8 @@ int main(int argc, char* argv[])
 	
 	req_dump_mem mess;
 	init_req_dump_mem(&mess, 0xBF000, 0xBF000 + 2000);
+	cout << "req_dump_mem type:" << mess.t << endl;
+
 	convert_to_network_order(&mess);
 	send_data(sd, (char*)&mess, sizeof(mess));
 
