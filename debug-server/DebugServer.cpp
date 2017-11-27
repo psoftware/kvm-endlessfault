@@ -28,17 +28,23 @@ void DebugServer::_main_fun(int serv_sockt, vector<thread *> &peers, machine_inf
 
 void DebugServer::_worker_fun(int sockt, machine_info mi)
 {
-	logg << "worker fun mem_size_:" << mi.mem_size << endl;
+	logg << "worker fun mem_size_:" << std::dec << mi.mem_size << " addr:" <<std::hex << mi.guest_mem_ptr << endl;
 	my_buffer my_buf;
+	my_buf.size = 0;
+	my_buf.buf = NULL;
 	while( true ){
+		logg << "recv_data su " << std::dec << sockt << endl;
 		recv_data(sockt, &my_buf);
+		logg << "convert_to_host_order" << endl;
 		convert_to_host_order(my_buf.buf);
+		logg << "switch " << (unsigned int)(((simple_mess*)my_buf.buf)->t) << endl;
 		switch( ((simple_mess*)my_buf.buf)->t )
 		{
 			case WELCOME_MESS:
 				logg << "new client logged" << endl;
 				break;
 			case REQ_DUMP_MEM:
+				logg << "REQ_DUMP_MEM" << endl;
 				_send_dump_mem( sockt, mi, ((req_dump_mem*)my_buf.buf)->timestamp,
 							   ((req_dump_mem*)my_buf.buf)->start_addr,
 							   ((req_dump_mem*)my_buf.buf)->end_addr );

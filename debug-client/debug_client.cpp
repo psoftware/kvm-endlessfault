@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "../debug-server/net_wrapper.h"
+#include "../debug-server/messages.h"
 
 void stampa_indirizzo( struct sockaddr_in *addr )
 {
@@ -54,6 +55,10 @@ int main(int argc, char* argv[])
 	} else 
 		printf("Connesso correttamente al server %s\n",argv[1]);
 	
+	req_dump_mem mess;
+	init_req_dump_mem(&mess, 0xBF000, 0xBF000 + 2000);
+	convert_to_network_order(&mess);
+	send_data(sd, (char*)&mess, sizeof(mess));
 
 	recv_data(sd, &my_buff);
 	printf("-----------Memory dump------------\n");
