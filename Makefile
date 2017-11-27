@@ -59,7 +59,7 @@ bootloader/Bootloader.o: bootloader/Bootloader.cpp bootloader/Bootloader.h
 	g++ -c bootloader/Bootloader.cpp -o bootloader/Bootloader.o $(COMM_CFLAGS)
 
 debug-client/debug_client.o: debug-client/debug_client.cpp debug-server/net_wrapper.h 
-	g++ -c debug-client/debug_client.cpp -o debug-client/debug_client.o
+	g++ -c debug-client/debug_client.cpp -o debug-client/debug_client.o $(COMM_CFLAGS)
 
 build/boot64: bootloader/boot64.S
 	g++ -m32 -nostdlib -fno-exceptions -g -fno-rtti -fno-stack-protector -mno-red-zone -gdwarf-2 -fpic -m32 -Ttext=0 bootloader/boot64.S -o build/boot64 -Wl,-fuse-ld=gold
