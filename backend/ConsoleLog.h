@@ -40,7 +40,7 @@ public:
 	{
 		(*logstream) << object;
 		return *this;
-	}
+	} 
 
 	ConsoleLog& operator<<( std::ostream& (*pf)( std::ostream& ) )
 	{
@@ -50,7 +50,7 @@ public:
 
 	ConsoleLog& operator<<( std::basic_ios<char>& (*pf)( std::basic_ios<char>& ))
 	{
-	    (*logstream) << pf;
+		(*logstream) << pf;
 		return *this;
 	}
 };
