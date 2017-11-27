@@ -1,8 +1,8 @@
 #ifndef NET_WRAPPER_H
 #define NET_WRAPPER_H	
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <iostream>
+#include <cstdlib>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -12,6 +12,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include "../backend/ConsoleLog.h"
 
 #define INIT_MY_BUFFER {NULL, 0L};
 
