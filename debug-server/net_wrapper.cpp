@@ -1,4 +1,6 @@
 #include "net_wrapper.h"
+ConsoleLog &logg2 = *ConsoleLog::getInstance();
+using namespace std;
 
 int open_serverTCP(uint16_t port)
 {
@@ -8,7 +10,7 @@ int open_serverTCP(uint16_t port)
 
 	ret = socket(AF_INET, SOCK_STREAM, 0);
 	if( ret == -1 ) {
-		perror("Impossibile aprire socket");
+		logg2 << "Impossibile aprire socket" << endl;
 		return -1;
 	}
 	sock = ret;
@@ -21,15 +23,13 @@ int open_serverTCP(uint16_t port)
 	ret = bind(sock, (struct sockaddr*)&my_addr, sizeof(struct sockaddr_in));
 	if( ret == -1 )
 	{
-		//*printf("bind fallita \n");
-		perror("Bind fallita");
+		logg2 << "Bind fallita" << endl;
 		close(sock);
 		return -1;
 	}
 
 	inet_ntop(AF_INET, &my_addr.sin_addr, ip_str, 16);
-	printf("Server aperto. ip:%s porta:%hu\n",ip_str,port);
-
+	logg2 << "Server aperto. ip:" << ip_str << " porta:"<< port << endl;
 	ret = listen(sock, 10);
 	
 	if( ret == -1)
@@ -52,13 +52,13 @@ int accept_serverTCP(int sock_serv, ConnectionTCP *conn)
 	/*printf("sto per accettare. len=%d \n",len);*/
 	sd = accept(sock_serv, (struct sockaddr*)&conn->cl_addr, &len);
 	if( sd == -1 ) {
-		perror("Errore accept");
+		logg2 << "Errore accept" << endl;
 		return -1;
 	}
 	conn->socket = sd;
 
 	inet_ntop(AF_INET, ((char*)&conn->cl_addr.sin_addr), ip_str, 16);
-	printf("nuovo peer connesso ip:%s porta:%hu\n",ip_str,ntohs(conn->cl_addr.sin_port));
+	logg2 << "nuovo peer connesso ip:"<< ip_str << " porta: "<< ntohs(conn->cl_addr.sin_port) << endl;
 	return sd;
 }
 
@@ -70,13 +70,13 @@ int send_data( int sockt, char* buf, uint32_t buf_len )
       /*invia quanti byte contiene il messaggio(formato big endian)*/
 	bsend = send(sockt, (void*)&nbytes, 4, 0);
       
-      #ifdef DEBUG_NET_WRAPPER	
-      printf("pacchetto nbytes mandati %ld B e vale %ld",bsend,len_nbytes);
-      #endif
+	#ifdef DEBUG_NET_WRAPPER	
+	logg2 << "pacchetto nbytes mandati " << std::dec << (uint32_t)bsend << " B e vale " << std::dec << (uint32_t)len_nbytes;
+	#endif
 
 	if( bsend < 4 )  
 	{
-		printf("pacchetto {nbytes} ha dim %d \n", bsend);
+		logg2 << "pacchetto {nbytes} ha dim " << bsend << endl;
 		return -1;
 	}
 
@@ -84,9 +84,8 @@ int send_data( int sockt, char* buf, uint32_t buf_len )
 	//sprintf("dim=%d mess=%s inviati=%d\n",buf_len,buf,bsend);
 
 	if( bsend < buf_len )
-		printf("pacchetto {buf} ha dim %d, inviati %d ",buf_len,bsend);
+		logg2 << "pacchetto {buf} ha dim " << buf_len << ", inviati " << bsend;
 	
-
 	return bsend;
 }
 
