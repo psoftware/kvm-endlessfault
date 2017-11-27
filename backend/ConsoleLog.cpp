@@ -1,7 +1,4 @@
 #include "ConsoleLog.h"
-#include <fstream>
-#include <iostream>
-
 using namespace std;
 
 ConsoleLog::ConsoleLog() : logstream(0)
