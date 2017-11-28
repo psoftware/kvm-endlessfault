@@ -2,7 +2,7 @@
 
 ConsoleOutput::ConsoleOutput(){
 
-	tcgetattr(STDIN_FILENO, &tty_attr_old);
+	tcgetattr(STDOUT_FILENO, &tty_attr_old);
 	pthread_mutex_init(&_cursorMutex, NULL);
 	_isBlinking = true;
 	
@@ -18,10 +18,10 @@ ConsoleOutput::~ConsoleOutput()
 void ConsoleOutput::resetConsole()
 {
 	// resettiamo lo stato della console utilizzando l'oggetto salvatoci nel costruttore
-	tcsetattr(STDIN_FILENO, TCSAFLUSH, &tty_attr_old);
+	tcsetattr(STDOUT_FILENO, TCSAFLUSH, &tty_attr_old);
 
 	// lanciamo un reset console
-	printf("\033c");
+	//printf("\033c");
 }
 
 
@@ -89,9 +89,19 @@ void* ConsoleOutput::_mainThread(void *This_par){
 			    char c = (char)temp;
 			    char textC =(char) ( (temp>>8) & 0x000f);
 			    char backg = (char) ((temp & 0x7000)>>12);
-		 
-			    string toPrint = "\033[" + This->_getTextColor((uint32_t)textC) + ';' + This->_getBackgroundColor((uint32_t)backg) + 'm' + c;
-			   	
+		 		char blinkC = (char) ( (temp & 0x8000)>>15);
+
+			    string toPrint = "\033[" + This->_getTextColor((uint32_t)textC) + ';' + This->_getBackgroundColor((uint32_t)backg) + 'm';
+			    		 	    
+			    if((uint32_t)blinkC){
+
+					pthread_mutex_lock(&(This->_cursorMutex));
+					toPrint += (This->_isBlinking)? c : ' ';
+					pthread_mutex_unlock(&(This->_cursorMutex));
+			    }else
+			   		toPrint += c;
+
+
 			   	if( (cursorY*COLS + cursorX) == (i*COLS+j)){
 
 			   		pthread_mutex_lock(&(This->_cursorMutex));
