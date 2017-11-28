@@ -6,7 +6,7 @@ using namespace std;
 
 ConsoleLog::ConsoleLog() : logstream(0)
 {
-
+	pthread_mutex_init(&mutex, NULL);
 }
 
 ConsoleLog* ConsoleLog::getInstance()
@@ -18,6 +18,10 @@ ConsoleLog* ConsoleLog::getInstance()
 
 void ConsoleLog::setFilePath(const char* filepath)
 {
+	pthread_mutex_lock(&mutex);
+
 	delete logstream;
 	logstream = new std::ofstream(filepath, ios_base::out|ios_base::trunc);
+
+	pthread_mutex_unlock(&mutex);
 }

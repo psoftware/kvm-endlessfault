@@ -20,6 +20,9 @@ private:
 	// istanza dello stream
 	std::ostream *logstream;
 
+	// vogliamo un'implementazione thread safe di questa libreria
+	pthread_mutex_t mutex;
+
 public:
 	// seguiamo il design pattern Singleton
 	static ConsoleLog* getInstance();
@@ -31,26 +34,34 @@ public:
 	template<typename T>
 	ConsoleLog& operator << (T&& x)
 	{
+		pthread_mutex_lock(&mutex);
 		(*logstream) << std::forward<T>(x);
+		pthread_mutex_unlock(&mutex);
 		return *this;
 	}
 
 	template<typename T>
 	ConsoleLog& operator << (const T& object)
 	{
+		pthread_mutex_lock(&mutex);
 		(*logstream) << object;
+		pthread_mutex_unlock(&mutex);
 		return *this;
 	}
 
 	ConsoleLog& operator<<( std::ostream& (*pf)( std::ostream& ) )
 	{
-	    (*logstream) << pf;
+		pthread_mutex_lock(&mutex);
+		(*logstream) << pf;
+		pthread_mutex_unlock(&mutex);
 		return *this;
 	}
 
 	ConsoleLog& operator<<( std::basic_ios<char>& (*pf)( std::basic_ios<char>& ))
 	{
-	    (*logstream) << pf;
+		pthread_mutex_lock(&mutex);
+		(*logstream) << pf;
+		pthread_mutex_unlock(&mutex);
 		return *this;
 	}
 };
