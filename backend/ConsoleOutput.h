@@ -26,6 +26,7 @@
 #define HIDE_CURSOR "\033[?25l"
 #define UNDERLINED "\033[4m"
 #define RESTORE "\033[0m"
+#define RESET_CONSOLE "\033c"
 
 using namespace std;
 

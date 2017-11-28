@@ -22,6 +22,7 @@ void ConsoleOutput::resetConsole()
 
 	// lanciamo un reset console
 	//printf("\033c");
+	cout<<RESET_CONSOLE;
 }
 
 
