@@ -181,6 +181,33 @@ void dump_memory(uint64_t offset, int size)
 	logg << endl << "=======================================================================" << endl;
 }
 
+void kvm_set_guest_debug(int vcpu_fd, uint64_t breakpoint_addr)
+{
+	kvm_guest_debug guest_debug;
+	memset(&guest_debug, 0, sizeof(guest_debug));
+
+	guest_debug.control = KVM_GUESTDBG_ENABLE | KVM_GUESTDBG_USE_HW_BP;
+	guest_debug.arch.debugreg[0] = breakpoint_addr; // DR0
+	guest_debug.arch.debugreg[7] = 0x1; // DR7
+
+	if (ioctl(vcpu_fd, KVM_SET_GUEST_DEBUG, &guest_debug) < 0) {
+		logg << "KVM_SET_GUEST_DEBUG: " << strerror(errno) << endl;
+		exit(1);
+	}
+}
+
+void kvm_debug_completed(int vcpu_fd)
+{
+	kvm_guest_debug guest_debug;
+	memset(&guest_debug, 0, sizeof(guest_debug));
+
+	if (ioctl(vcpu_fd, KVM_SET_GUEST_DEBUG, &guest_debug) < 0) {
+		logg << "KVM_SET_GUEST_DEBUG: " << strerror(errno) << endl;
+		exit(1);
+	}
+}
+
+
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 int main(int argc, char **argv)
 {
@@ -337,6 +364,8 @@ int main(int argc, char **argv)
 	dump_memory(0x200000, 512);
 	#endif
 
+	kvm_set_guest_debug(vcpu_fd, entry_point);
+
 	// a questo punto possiamo inizializzare le strutture per l'emulazione dei dispositivi di IO
 	initIO();
 
@@ -427,6 +456,12 @@ int main(int argc, char **argv)
 				logg << "kvm: TRIPLE FAULT. Shutting down" << endl;
 				trace_user_program(vcpu_fd, kr);
 				return 1;
+			case KVM_EXIT_DEBUG:
+				logg << "kvm: KVM_EXIT_DEBUG. Shutting down" << endl;
+				trace_user_program(vcpu_fd, kr);
+				kvm_debug_completed(vcpu_fd);
+				break;
+			// ================== Condizioni di errore ==================
 			case KVM_EXIT_FAIL_ENTRY:
 				logg << "kvm: KVM_EXIT_FAIL_ENTRY reason=" << std::dec << (unsigned long long)kr->fail_entry.hardware_entry_failure_reason << endl;
 				trace_user_program(vcpu_fd, kr);
