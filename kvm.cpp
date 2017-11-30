@@ -278,7 +278,6 @@ void kvm_handle_debug_exit(int vcpu_fd, kvm_debug_exit_arch dbg_arch)
 	gdb_submit_registers(vcpu_fd);
 	// rip però va aggiornato col valore che aveva prima che il trap si scatenasse
 	gdbserver_set_register(AMD64_RIP_REGNUM, dbg_arch.pc);
-	logg << "dbg_arch.pc=" << std::hex << (unsigned int)dbg_arch.pc << endl;
 
 	// segnaliamo a gdb che è avvenuta un'eccezione dovuta a un breakpoint (tipo 3)
 	handle_exception(3);
