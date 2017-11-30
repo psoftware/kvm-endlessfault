@@ -181,11 +181,11 @@ void dump_memory(uint64_t offset, int size)
 	logg << endl << "=======================================================================" << endl;
 }
 
+
+kvm_guest_debug guest_debug;
 void kvm_set_guest_debug(int vcpu_fd, uint64_t breakpoint_addr)
 {
-	kvm_guest_debug guest_debug;
-	memset(&guest_debug, 0, sizeof(guest_debug));
-
+	// KVM_GUESTDBG_SINGLESTEP
 	guest_debug.control = KVM_GUESTDBG_ENABLE | KVM_GUESTDBG_USE_HW_BP;
 	guest_debug.arch.debugreg[0] = breakpoint_addr; // DR0
 	guest_debug.arch.debugreg[7] = 0x1; // DR7
@@ -198,8 +198,7 @@ void kvm_set_guest_debug(int vcpu_fd, uint64_t breakpoint_addr)
 
 void kvm_debug_completed(int vcpu_fd)
 {
-	kvm_guest_debug guest_debug;
-	memset(&guest_debug, 0, sizeof(guest_debug));
+	guest_debug.arch.debugreg[7] = 0; // DR7
 
 	if (ioctl(vcpu_fd, KVM_SET_GUEST_DEBUG, &guest_debug) < 0) {
 		logg << "KVM_SET_GUEST_DEBUG: " << strerror(errno) << endl;
