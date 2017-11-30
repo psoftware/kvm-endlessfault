@@ -183,31 +183,6 @@ void dump_memory(uint64_t offset, int size)
 	logg << endl << "=======================================================================" << endl;
 }
 
-
-kvm_guest_debug guest_debug;
-void kvm_set_guest_debug(int vcpu_fd, uint64_t breakpoint_addr)
-{
-	// KVM_GUESTDBG_SINGLESTEP
-	guest_debug.control = KVM_GUESTDBG_ENABLE | KVM_GUESTDBG_USE_HW_BP;
-	guest_debug.arch.debugreg[0] = breakpoint_addr; // DR0
-	guest_debug.arch.debugreg[7] = 0x1; // DR7
-
-	if (ioctl(vcpu_fd, KVM_SET_GUEST_DEBUG, &guest_debug) < 0) {
-		logg << "KVM_SET_GUEST_DEBUG: " << strerror(errno) << endl;
-		exit(1);
-	}
-}
-
-void kvm_debug_completed(int vcpu_fd)
-{
-	guest_debug.arch.debugreg[7] = 0; // DR7
-
-	if (ioctl(vcpu_fd, KVM_SET_GUEST_DEBUG, &guest_debug) < 0) {
-		logg << "KVM_SET_GUEST_DEBUG: " << strerror(errno) << endl;
-		exit(1);
-	}
-}
-
 void gdb_submit_registers(int vcpu_fd)
 {
 	kvm_regs regs;
@@ -246,6 +221,42 @@ void gdb_submit_registers(int vcpu_fd)
 	gdbserver_set_register(AMD64_ES_REGNUM, sregs.es.base);		/* %es */
 	gdbserver_set_register(AMD64_FS_REGNUM, sregs.fs.base);		/* %fs */
 	gdbserver_set_register(AMD64_GS_REGNUM, sregs.gs.base);		/* %gs */
+}
+
+kvm_guest_debug guest_debug;
+void kvm_set_guest_debug(int vcpu_fd, uint64_t breakpoint_addr)
+{
+	// KVM_GUESTDBG_SINGLESTEP
+	guest_debug.control = KVM_GUESTDBG_ENABLE | KVM_GUESTDBG_USE_HW_BP | KVM_GUESTDBG_USE_SW_BP;
+	//guest_debug.arch.debugreg[0] = breakpoint_addr; // DR0
+	//guest_debug.arch.debugreg[7] = 0x1; // DR7
+
+	if (ioctl(vcpu_fd, KVM_SET_GUEST_DEBUG, &guest_debug) < 0) {
+		logg << "KVM_SET_GUEST_DEBUG: " << strerror(errno) << endl;
+		exit(1);
+	}
+}
+
+void kvm_debug_completed(int vcpu_fd)
+{
+	guest_debug.arch.debugreg[7] = 0; // DR7
+
+	if (ioctl(vcpu_fd, KVM_SET_GUEST_DEBUG, &guest_debug) < 0) {
+		logg << "KVM_SET_GUEST_DEBUG: " << strerror(errno) << endl;
+		exit(1);
+	}
+}
+
+void kvm_handle_debug_exit(int vcpu_fd, kvm_debug_exit_arch dbg_arch)
+{
+	// la cache dei registri del gdbserver va aggiornata
+	gdb_submit_registers(vcpu_fd);
+	// rip però va aggiornato col valore che aveva prima che il trap si scatenasse
+	gdbserver_set_register(AMD64_RIP_REGNUM, dbg_arch.pc);
+	logg << "dbg_arch.pc=" << std::hex << (unsigned int)dbg_arch.pc << endl;
+
+	// segnaliamo a gdb che è avvenuta un'eccezione dovuta a un breakpoint (tipo 3)
+	handle_exception(3);
 }
 
 
@@ -502,9 +513,9 @@ int main(int argc, char **argv)
 				trace_user_program(vcpu_fd, kr);
 				return 1;
 			case KVM_EXIT_DEBUG:
-				logg << "kvm: KVM_EXIT_DEBUG. Shutting down" << endl;
+				logg << "kvm: KVM_EXIT_DEBUG" << endl;
 				trace_user_program(vcpu_fd, kr);
-				kvm_debug_completed(vcpu_fd);
+				kvm_handle_debug_exit(vcpu_fd, kr->debug.arch);
 				break;
 			// ================== Condizioni di errore ==================
 			case KVM_EXIT_FAIL_ENTRY:
