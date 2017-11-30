@@ -51,6 +51,9 @@ keyboard keyb;
 
 // COM1 emulata (frontend)
 serial_port* com1;
+serial_port* com2;
+serial_port* com3;
+serial_port* com4;
 
 // gestione input console (backend)
 ConsoleInput* console_in;
@@ -79,8 +82,11 @@ void initIO()
 	// avviamo il thread che si occuperà di gestire l'input della console
 	console_in->startEventThread();
 
-	// inizializziamo la porta seriale
+	// inizializziamo le porte seriali
 	com1 = new serial_port(0x3f8, logg);
+	com2 = new serial_port(0x2f8, logg);
+	com3 = new serial_port(0x3e8, logg);
+	com4 = new serial_port(0x2e8, logg);
 
 	vga.setVMem((uint16_t*)(guest_physical_memory + 0xB8000));
 	console_out = ConsoleOutput::getInstance();
@@ -386,7 +392,7 @@ int main(int argc, char **argv)
 					else if(kr->io.direction == KVM_EXIT_IO_IN)
 							*io_param = vga.read_reg_byte(kr->io.port);
 				}
-				// ======== Porta Seriale Primaria ========
+				// ======== COM 1 ========
 				else if (kr->io.size == 1 && kr->io.count == 1 && (kr->io.port >= 0x03f8 && kr->io.port <= 0x03ff))
 				{
 					if(kr->io.direction == KVM_EXIT_IO_OUT)
@@ -394,11 +400,29 @@ int main(int argc, char **argv)
 					else if(kr->io.direction == KVM_EXIT_IO_IN)
 							*io_param = com1->read_reg_byte(kr->io.port);
 				}
-				// ======== Porta Seriale Secondaria ========
-				else if (kr->io.size == 1 && kr->io.count == 1 && kr->io.port == 0x02F8 && kr->io.direction == KVM_EXIT_IO_OUT)
+				// ======== COM 2 ========
+				else if (kr->io.size == 1 && kr->io.count == 1 && (kr->io.port >= 0x02f8 && kr->io.port <= 0x02ff))
 				{
-					// usato per debuggare i programmi
-					logg << "kvm: Risultato su Porta parallela: " << std::hex << (unsigned int)*io_param << endl;
+					if(kr->io.direction == KVM_EXIT_IO_OUT)
+						com2->write_reg_byte(kr->io.port, *io_param);
+					else if(kr->io.direction == KVM_EXIT_IO_IN)
+							*io_param = com2->read_reg_byte(kr->io.port);
+				}
+				// ======== COM 3 ========
+				else if (kr->io.size == 1 && kr->io.count == 1 && (kr->io.port >= 0x03e8 && kr->io.port <= 0x03ef))
+				{
+					if(kr->io.direction == KVM_EXIT_IO_OUT)
+						com3->write_reg_byte(kr->io.port, *io_param);
+					else if(kr->io.direction == KVM_EXIT_IO_IN)
+							*io_param = com3->read_reg_byte(kr->io.port);
+				}
+				// ======== COM 4 ========
+				else if (kr->io.size == 1 && kr->io.count == 1 && (kr->io.port >= 0x02e8 && kr->io.port <= 0x02ef))
+				{
+					if(kr->io.direction == KVM_EXIT_IO_OUT)
+						com4->write_reg_byte(kr->io.port, *io_param);
+					else if(kr->io.direction == KVM_EXIT_IO_IN)
+							*io_param = com4->read_reg_byte(kr->io.port);
 				}
 				// ======== Registri Controller PCI ========
 				else if(kr->io.port == 0xcfc || kr->io.port == 0xcf8)
