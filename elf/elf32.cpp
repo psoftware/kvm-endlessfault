@@ -41,6 +41,7 @@ class EseguibileElf32: public Eseguibile {
 		SegmentoElf32(EseguibileElf32 *padre_, Elf32_Phdr* ph_);
 		virtual bool scrivibile() const;
 		virtual uint64_t ind_virtuale() const;
+		virtual uint64_t dimensione_filesz() const;
 		virtual uint64_t dimensione() const;
 		virtual bool finito() const;
 		virtual bool copia_pagina(void* dest);
@@ -152,6 +153,11 @@ uint64_t EseguibileElf32::SegmentoElf32::ind_virtuale() const
 	return ph->p_vaddr;
 }
 
+uint64_t EseguibileElf32::SegmentoElf32::dimensione_filesz() const
+{
+	return ph->p_filesz;
+}
+
 uint64_t EseguibileElf32::SegmentoElf32::dimensione() const
 {
 	return ph->p_memsz;
@@ -196,11 +202,28 @@ bool EseguibileElf32::SegmentoElf32::copia_pagina(void* dest)
 
 uint64_t EseguibileElf32::SegmentoElf32::copia_segmento(void *dest)
 {
-	if (fseek(padre->pexe, curr_offset, SEEK_SET) != 0) {
+	if (fseek(padre->pexe, ph->p_offset, SEEK_SET) != 0) {
 		fprintf(stderr, "errore nel file ELF\n");
 		exit(EXIT_FAILURE);
 	}
-	return fread(dest, 1, this->dimensione(), padre->pexe);
+
+	uint64_t filesz = this->dimensione_filesz();
+	uint64_t memsz = this->dimensione();
+	uint64_t read_count = fread(dest, 1, filesz, padre->pexe);
+
+	#ifdef DEBUG_LOG
+	logg << "copia_segmento32: filesz " << std::dec << filesz << " curr_offset " << curr_offset << " memsz " << memsz << endl;
+	#endif
+
+	if(this->dimensione() > this->dimensione_filesz())
+	{
+		#ifdef DEBUG_LOG
+		logg << "azzero ulteriori " << std::hex << (unsigned long)((uint8_t*)dest + filesz) << endl;
+		#endif
+		memset((uint8_t*)dest + filesz, 0, memsz-filesz);
+		read_count += memsz-filesz;
+	}
+	return read_count;
 }
 
 Eseguibile* InterpreteElf32::interpreta(FILE* pexe)
