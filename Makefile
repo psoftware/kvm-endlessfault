@@ -21,13 +21,13 @@ all: kvm build/boot64 build/prog_prova build/keyboard_program build/ricorsivo de
 kvm: kvm.o bootloader/Bootloader.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) $(DEBUGSERVER_OBJ_FILES)
 	g++ kvm.o bootloader/Bootloader.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) $(DEBUGSERVER_OBJ_FILES) -o kvm $(LD_FLAGS)
 
-build/prog_prova: target/prog_prova.c target/lib.s
+build/prog_prova: target/prog_prova.c target/lib.s target/lib.h
 	gcc $(ELFPROG_CFLAGS) target/prog_prova.c target/lib.s -o build/prog_prova
 
 build/keyboard_program: target/keyboard_program.s
 	gcc $(ELFPROG_CFLAGS) target/keyboard_program.s -o build/keyboard_program
 
-build/ricorsivo: target/ricorsivo.c target/lib.s
+build/ricorsivo: target/ricorsivo.c target/lib.s target/lib.h
 	gcc $(ELFPROG_CFLAGS) target/ricorsivo.c target/lib.s -o build/ricorsivo
 
 debug-client/debug_client: debug-client/debug_client.o debug-server/net_wrapper.o debug-server/messages.o backend/ConsoleLog.o
