@@ -7,6 +7,7 @@
 void putDebugChar(char);	/* write a single character      */
 char getDebugChar();	/* read and return a single char */
 void exceptionHandler();	/* assign an exception handler   */
+extern void kvm_debug_set_step(bool enable_step);
 
 extern unsigned char guest_physical_memory[] __attribute__ ((aligned(4096)));
 
@@ -408,8 +409,10 @@ void handle_exception(int exceptionVector)
 				/* cAA..AA    Continue at address AA..AA(optional) */
 				/* sAA..AA   Step one instruction from AA..AA(optional) */
 			case 's':
-				
+				kvm_debug_set_step(true);
+				return;
 			case 'c':
+				kvm_debug_set_step(false);
 				return;	// return to kvm monitor
 				/* try to read optional parameter, pc unchanged if no parm */
 				/*if(hexToInt(&ptr, &addr))

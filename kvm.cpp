@@ -224,8 +224,24 @@ void gdb_submit_registers(int vcpu_fd)
 }
 
 kvm_guest_debug guest_debug;
-void kvm_set_guest_debug(int vcpu_fd, uint64_t breakpoint_addr)
+int debug_vcpu_id;
+
+void kvm_debug_set_step(bool enable_step)
 {
+	if(enable_step)
+		guest_debug.control |= KVM_GUESTDBG_SINGLESTEP;
+	else
+		guest_debug.control &= ~(KVM_GUESTDBG_SINGLESTEP);
+
+	if (ioctl(debug_vcpu_id, KVM_SET_GUEST_DEBUG, &guest_debug) < 0) {
+		logg << "KVM_SET_GUEST_DEBUG: " << strerror(errno) << endl;
+		exit(1);
+	}
+}
+
+void kvm_enable_guest_debug(int vcpu_fd, uint64_t breakpoint_addr)
+{
+	debug_vcpu_id = vcpu_fd;
 	// KVM_GUESTDBG_SINGLESTEP
 	guest_debug.control = KVM_GUESTDBG_ENABLE | KVM_GUESTDBG_USE_HW_BP | KVM_GUESTDBG_USE_SW_BP;
 	//guest_debug.arch.debugreg[0] = breakpoint_addr; // DR0
@@ -416,7 +432,7 @@ int main(int argc, char **argv)
 	dump_memory(0x200000, 512);
 	#endif
 
-	kvm_set_guest_debug(vcpu_fd, entry_point);
+	kvm_enable_guest_debug(vcpu_fd, entry_point);
 
 	gdb_submit_registers(vcpu_fd);
 	gdbserver_start();
