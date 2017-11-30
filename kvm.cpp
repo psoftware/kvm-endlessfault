@@ -13,10 +13,11 @@
 #include "frontend/serial_port.h"
 #include "backend/ConsoleLog.h"
 #include "backend/ConsoleInput.h"
+#include "debug-server/DebugServer.h"
 #include "bootloader/Bootloader.h"
-
 #include "backend/ConsoleOutput.h"
 #include "frontend/vgaController.h"
+#include "INIReader.h"
 
 using namespace std;
 
@@ -38,9 +39,11 @@ using namespace std;
  */
 #include <linux/kvm.h>
 
+
 // memoria del guest
-const uint32_t GUEST_PHYSICAL_MEMORY_SIZE = 8*1024*1024; // Memoria Fisica del guest a 2MB
-unsigned char guest_physical_memory[GUEST_PHYSICAL_MEMORY_SIZE] __attribute__ ((aligned(4096)));
+uint32_t GUEST_PHYSICAL_MEMORY_SIZE = 8*1024*1024; // Memoria Fisica del guest a 2MB
+//unsigned char guest_physical_memory[GUEST_PHYSICAL_MEMORY_SIZE] __attribute__ ((aligned(4096)));
+unsigned char *guest_physical_memory = NULL;
 unsigned char dumb_stack_memory[4096] __attribute__ ((aligned(4096)));
 
 // logger globale
@@ -190,11 +193,16 @@ void dump_memory(uint64_t offset, int size)
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 int main(int argc, char **argv)
 {
+
+	uint32_t mem_size;
+	uint16_t serv_port;
+
 	// controllo parametri in ingresso
 	if(argc != 2 && (argc ==1 || argc == 3 || (argc == 4 && strcmp(argv[2], "-logfile"))) ) {
 		cout << "Formato non corretto. Uso: kvm <elf file> [-logfile filefifo]" << endl;
 		return 1;
 	}
+
 
 	// ci è stato richiesto di utilizzare un file specifico per il logging
 	if(argc == 4 && !strcmp(argv[2], "-logfile"))
@@ -206,11 +214,36 @@ int main(int argc, char **argv)
 	char *elf_file_path = argv[1];
 	FILE *elf_file = fopen(elf_file_path, "r");
 	if(!elf_file) {
-		cout << "Il file selezionato non esiste" << endl;
+		cout << "The selected executable does not exist" << endl;
 		return 1;
 	}
 	fclose(elf_file);
 
+	// carico file di configurazione
+	INIReader reader("config.ini");
+
+    if (reader.ParseError() < 0) {
+        cout << "Can't load 'config.ini'\n";
+        return 2;
+    }
+
+
+    mem_size = reader.GetInteger("vm-spec", "memsize", -1);
+    serv_port = reader.GetInteger("debug-server", "port", -1);
+    cout << "Config loaded from 'config.ini': server-port=" << serv_port <<" mem-size=" << mem_size << endl;
+             
+    if( mem_size > 2 && mem_size < 128 ){
+    	GUEST_PHYSICAL_MEMORY_SIZE = mem_size*1024*1024;
+    }
+ 	
+ 	guest_physical_memory = (unsigned char*)aligned_alloc(4096, GUEST_PHYSICAL_MEMORY_SIZE);
+    if( guest_physical_memory == NULL )
+    {
+    	cout << "Cannot allocate guest_physical_memory" << endl;
+    	return 3;
+    }
+    
+    ////////////////////
 	/* the first thing to do is to open the /dev/kvm pseudo-device,
 	 * obtaining a file descriptor.
 	 */
@@ -218,7 +251,7 @@ int main(int argc, char **argv)
 	if (kvm_fd < 0) {
 		/* as usual, a negative value means error */
 		cout << "/dev/kvm: " << strerror(errno) << endl;
-		return 1;
+		return 4;
 	}
 
 	/* we interact with our kvm_fd file descriptor using ioctl()s.
@@ -230,7 +263,7 @@ int main(int argc, char **argv)
 	int vm_fd = ioctl(kvm_fd, KVM_CREATE_VM, 0);
 	if (vm_fd < 0) {
 		cout << "create vm: " << strerror(errno) << endl;
-		return 1;
+		return 5;
 	}
 
 	/* initially, the vm has no resources: no memory, no cpus.
@@ -287,6 +320,13 @@ int main(int argc, char **argv)
 	// carichiamo l'eseguibile da file
 	uint64_t entry_point = estrai_segmento(elf_file_path, (void*)guest_physical_memory, GUEST_PHYSICAL_MEMORY_SIZE);
 
+	// Avviamo il server di debug
+	try {
+		DebugServer debugs(serv_port,GUEST_PHYSICAL_MEMORY_SIZE,guest_physical_memory);
+		debugs.start();
+	} catch( ... ) {
+		logg << "impossibile aprire il server di debug" << endl;
+	}
 	/* now we add a virtual cpu (vcpu) to our machine. We obtain yet
 	 * another open file descriptor, which we can use to
 	 * interact with the vcpu. Note that we can have several
