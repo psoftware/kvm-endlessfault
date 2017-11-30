@@ -17,7 +17,7 @@ void serial_port::write_reg_byte(io_addr addr, uint8_t val) {
 	//logg << "serial_port: ricevuto " << (char)val << "\n";
 
 	if(addr==THR_addr) {
-		logg << (char)val;
+		logg << (char)val << std::flush;
 		THR=addr;
 	}
 	else if(addr==DLL_addr) {
