@@ -11,4 +11,6 @@ wait_char:
 
 	movw $0x2f8, %dx
 	outb %al, %dx
+	movb $'\n', %al
+	outb %al, %dx
 	jmp wait_char
