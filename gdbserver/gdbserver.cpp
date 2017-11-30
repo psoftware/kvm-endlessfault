@@ -29,16 +29,11 @@ static const char hexchars[]="0123456789abcdef";
 /*
  * these should not be static cuz they can be used outside this module
  */
-int registers[NUMREGS];
+long registers[NUMREGS];
 
 #define STACKSIZE 10000
 int remcomStack[STACKSIZE/sizeof(int)];
 static int* stackPtr = &remcomStack[STACKSIZE/sizeof(int) - 1];
-
-void _returnFromException ()
-{
-	//return_to_prog ();
-}
 
 int hex(char ch)
 {
@@ -311,7 +306,8 @@ void handle_exception(int exceptionVector)
 	ptr = mem2hex((char *)&registers[AMD64_RBP_REGNUM], ptr, 8); 	/* FP */
 	*ptr++ = ';';
 
-	*ptr++ = hexchars[AMD64_RIP_REGNUM];
+	*ptr++ = hexchars[AMD64_RIP_REGNUM >> 4];
+	*ptr++ = hexchars[AMD64_RIP_REGNUM & 0xf];
 	*ptr++ = ':';
 	ptr = mem2hex((char *)&registers[AMD64_RIP_REGNUM], ptr, 8); 	/* PC */
 	*ptr++ = ';';
@@ -343,7 +339,7 @@ void handle_exception(int exceptionVector)
 				hex2mem(ptr,(char *) registers, NUMREGBYTES);
 				strcpy(remcomOutBuffer, "OK");
 				break;
-			case 'p':		/* set the value of a single CPU register - return OK */
+			case 'p':		/* get the value of a single CPU register */
 				{
 					int regno;
 
@@ -364,7 +360,7 @@ void handle_exception(int exceptionVector)
 
 					if(hexToInt(&ptr, &regno) && *ptr++ == '=')
 						if(regno >= 0 && regno < NUMREGS)
-						{
+						{printf("Set register %d\n",regno );
 							hex2mem(ptr,(char *) &registers[regno], 8);
 							strcpy(remcomOutBuffer, "OK");
 							break;
@@ -414,20 +410,20 @@ void handle_exception(int exceptionVector)
 			case 's':
 				
 			case 'c':
+				return;	// return to kvm monitor
 				/* try to read optional parameter, pc unchanged if no parm */
-				if(hexToInt(&ptr, &addr))
-					registers[AMD64_RIP_REGNUM] = addr;
+				/*if(hexToInt(&ptr, &addr))
+					registers[AMD64_RIP_REGNUM] = addr;*/
 
-				newPC = registers[AMD64_RIP_REGNUM];
+				//newPC = registers[AMD64_RIP_REGNUM];
 
 				/* clear the trace bit */
-				registers[AMD64_RSP_REGNUM] &= 0xfffffeff;
+				//registers[AMD64_RSP_REGNUM] &= 0xfffffeff;
 
 				/* set the trace bit if we're stepping
 				if(stepping)
 					registers[PS] |= 0x100;*/
 
-				_returnFromException();	/* this is a jump */
 				break;
 
 				/* kill the program */
