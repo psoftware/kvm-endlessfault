@@ -594,7 +594,7 @@ int main(int argc, char **argv)
 				return 1;
 			case KVM_EXIT_DEBUG:
 				logg << "kvm: KVM_EXIT_DEBUG" << endl;
-				trace_user_program(vcpu_fd, kr);
+				//trace_user_program(vcpu_fd, kr);
 				kvm_handle_debug_exit(vcpu_fd, kr->debug.arch);
 				break;
 			// ================== Condizioni di errore ==================
