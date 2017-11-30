@@ -361,7 +361,7 @@ void handle_exception(int exceptionVector)
 
 					if(hexToInt(&ptr, &regno) && *ptr++ == '=')
 						if(regno >= 0 && regno < NUMREGS)
-						{printf("Set register %d\n",regno );
+						{
 							hex2mem(ptr,(char *) &registers[regno], 8);
 							strcpy(remcomOutBuffer, "OK");
 							break;
@@ -441,7 +441,7 @@ void handle_exception(int exceptionVector)
 
 		/* reply to the request */
 		putpacket(remcomOutBuffer);
-		printf("\n");
+		//printf("\n");
 	}
 }
 
@@ -479,7 +479,7 @@ int initialize_server_socket(const char * bind_addr, int port)
 
 void putDebugChar(char c)
 {
-	printf("%c", c);
+	//printf("%c", c);
 	fflush(stdout);
 
 	if(write(connected_client_fd, &c, 1) < 0)
@@ -498,7 +498,7 @@ char getDebugChar()
 		exit(1);
 	}
 
-	printf("\033[4m%c\033[0m", value);
+	//printf("\033[4m%c\033[0m", value);
 	fflush(stdout);
 
 	return value;
@@ -516,7 +516,7 @@ bool gdbserver_start()
 	int server_socket = initialize_server_socket("0.0.0.0", 1234);
 	if(server_socket < 0)
 	{
-		printf("main: creazione server_socket fallita\n");
+		printf("gdbserver_start: creazione server_socket fallita\n");
 		exit(1);
 	}
 
@@ -524,11 +524,11 @@ bool gdbserver_start()
 	struct sockaddr_in cl_addr;
 	int my_len = sizeof(cl_addr);
 	connected_client_fd = accept(server_socket, (struct sockaddr*)&cl_addr, (socklen_t*)&my_len);
-	printf("main: client connesso!\n");
+	printf("gdbserver_start: client connesso!\n");
 
 	// va lanciato un breakpoint per notificare gdb
-	printf("main: lancio eccezione fake\n");
+	printf("gdbserver_start: lancio eccezione iniziale\n");
 	handle_exception(3);
 
-	printf("main: termino\n");
+	printf("gdbserver_start: termino\n");
 }
