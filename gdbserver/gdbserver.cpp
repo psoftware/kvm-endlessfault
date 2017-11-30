@@ -9,7 +9,7 @@ char getDebugChar();	/* read and return a single char */
 void exceptionHandler();	/* assign an exception handler   */
 extern void kvm_debug_set_step(bool enable_step);
 
-extern unsigned char guest_physical_memory[] __attribute__ ((aligned(4096)));
+extern unsigned char *guest_physical_memory;
 
 /************************************************************************/
 /* BUFMAX defines the maximum number of characters in inbound/outbound buffers*/

@@ -1,15 +1,12 @@
-/*int sum(int a, int b)
-{
-	return a+b;
-}*/
+#include "lib.h"
 
-// -Wl,--build-id=none
-
-unsigned int main()
+int main()
 {
 	unsigned int a=2, b=10;
-	//int c = sum(a,b);
 	unsigned int c = a+b;
 
+	exit(c);
+
+	// non ci arriviamo mai
 	return c;
 }

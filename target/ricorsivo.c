@@ -1,3 +1,5 @@
+#include "lib.h"
+
 int ricorsiva(int a)
 {
 	if( a == 1 ) return 0;
@@ -8,5 +10,8 @@ int main()
 {
 	int a = 10;
 	int b = 9;
-	return b*ricorsiva(a);
+	exit(b*ricorsiva(a));
+
+	// mai raggiunto
+	return 0;
 }
