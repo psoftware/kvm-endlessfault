@@ -511,14 +511,16 @@ void gdbserver_set_register(amd64_regnum name, unsigned long value)
 	registers[name] = value;
 }
 
-bool gdbserver_start()
+bool gdbserver_start(const char* ip_addr, unsigned short port)
 {
-	int server_socket = initialize_server_socket("0.0.0.0", 1234);
+	int server_socket = initialize_server_socket(ip_addr, port);
 	if(server_socket < 0)
 	{
 		printf("gdbserver_start: creazione server_socket fallita\n");
 		exit(1);
 	}
+
+	printf("gdbserver_start: server in ascolto su %s:%d\n", ip_addr, port);
 
 	// dobbiamo aspettare che il client si connetta
 	struct sockaddr_in cl_addr;

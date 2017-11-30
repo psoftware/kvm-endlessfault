@@ -48,6 +48,9 @@ uint32_t GUEST_PHYSICAL_MEMORY_SIZE = 8*1024*1024; // Memoria Fisica del guest a
 unsigned char *guest_physical_memory = NULL;
 unsigned char dumb_stack_memory[4096] __attribute__ ((aligned(4096)));
 
+// modalità di debug con gdb
+bool debug_mode;
+
 // logger globale
 ConsoleLog& logg = *ConsoleLog::getInstance();
 
@@ -477,15 +480,23 @@ int main(int argc, char **argv)
 	dump_memory(0x200000, 512);
 	#endif
 
-	kvm_enable_guest_debug(vcpu_fd, entry_point);
+	// ========== GDB Server ==========
+	if(debug_mode = reader.GetBoolean("gdb-server", "enable", false)) {
+		// configuriamo kvm affinchè attivi le EXIT_DEBUG
+		kvm_enable_guest_debug(vcpu_fd, entry_point);
 
-	gdb_submit_registers(vcpu_fd);
-	gdbserver_start();
+		// aggiorniamo la cache dei registri di gdb
+		gdb_submit_registers(vcpu_fd);
 
+		// leggiamo i parametri necessari e avviamo il server per gdb
+		std::string gdb_address = reader.Get("gdb-server", "address", "127.0.0.1");
+		unsigned short gdb_port = reader.GetInteger("gdb-server", "port", -1);
+		gdbserver_start(gdb_address.c_str(), gdb_port);
+	}
+	// =================================
 
 	// a questo punto possiamo inizializzare le strutture per l'emulazione dei dispositivi di IO
 	initIO();
-
 
 	/* we are finally ready to start the machine, by issuing
 	 * the KVM_RUN ioctl() on the vcpu_fd. While the machine
@@ -592,8 +603,13 @@ int main(int argc, char **argv)
 				//trace_user_program(vcpu_fd, kr);
 				return 1;
 			case KVM_EXIT_DEBUG:
+				if(!debug_mode)
+				{
+					logg << "kvm: Unexpected KVM_EXIT_DEBUG: debug mode is not enabled" << endl;
+					trace_user_program(vcpu_fd, kr);
+					return 1;
+				}
 				logg << "kvm: KVM_EXIT_DEBUG" << endl;
-				//trace_user_program(vcpu_fd, kr);
 				kvm_handle_debug_exit(vcpu_fd, kr->debug.arch);
 				break;
 			// ================== Condizioni di errore ==================
