@@ -18,6 +18,8 @@
 #include "backend/ConsoleOutput.h"
 #include "frontend/vgaController.h"
 
+#include "gdbserver/gdbserver.h"
+
 using namespace std;
 
 /* We are going to use the linux kvm API to crate a simple
@@ -206,6 +208,46 @@ void kvm_debug_completed(int vcpu_fd)
 	}
 }
 
+void gdb_submit_registers(int vcpu_fd)
+{
+	kvm_regs regs;
+	if (ioctl(vcpu_fd, KVM_GET_REGS, &regs) < 0) {
+		logg << "trace_user_program KVM_GET_REGS error: " << strerror(errno) << endl;
+		return;
+	}
+
+	kvm_sregs sregs;
+	if (ioctl(vcpu_fd, KVM_GET_SREGS, &sregs) < 0) {
+		logg << "trace_user_program KVM_GET_SREGS error: " << strerror(errno) << endl;
+		exit(1);
+	}
+
+	gdbserver_set_register(AMD64_RAX_REGNUM, regs.rax);		/* %rax */
+	gdbserver_set_register(AMD64_RBX_REGNUM, regs.rbx);		/* %rbx */
+	gdbserver_set_register(AMD64_RCX_REGNUM, regs.rcx);		/* %rcx */
+	gdbserver_set_register(AMD64_RDX_REGNUM, regs.rdx);		/* %rdx */
+	gdbserver_set_register(AMD64_RSI_REGNUM, regs.rsi);		/* %rsi */
+	gdbserver_set_register(AMD64_RDI_REGNUM, regs.rdi);		/* %rdi */
+	gdbserver_set_register(AMD64_RBP_REGNUM, regs.rbp);		/* %rbp */
+	gdbserver_set_register(AMD64_RSP_REGNUM, regs.rsp);		/* %rsp */
+	gdbserver_set_register(AMD64_R8_REGNUM, regs.r8);		/* %r8 */
+	gdbserver_set_register(AMD64_R9_REGNUM, regs.r9);		/* %r9 */
+	gdbserver_set_register(AMD64_R10_REGNUM, regs.r10);		/* %r10 */
+	gdbserver_set_register(AMD64_R11_REGNUM, regs.r11);		/* %r11 */
+	gdbserver_set_register(AMD64_R12_REGNUM, regs.r12);		/* %r12 */
+	gdbserver_set_register(AMD64_R13_REGNUM, regs.r13);		/* %r13 */
+	gdbserver_set_register(AMD64_R14_REGNUM, regs.r14);		/* %r14 */
+	gdbserver_set_register(AMD64_R15_REGNUM, regs.r15);		/* %r15 */
+	gdbserver_set_register(AMD64_RIP_REGNUM, regs.rip);		/* %rip */
+	gdbserver_set_register(AMD64_EFLAGS_REGNUM, regs.rflags);		/* %eflags */
+	gdbserver_set_register(AMD64_CS_REGNUM, sregs.cs.base);		/* %cs */
+	gdbserver_set_register(AMD64_SS_REGNUM, sregs.ss.base);		/* %ss */
+	gdbserver_set_register(AMD64_DS_REGNUM, sregs.ds.base);		/* %ds */
+	gdbserver_set_register(AMD64_ES_REGNUM, sregs.es.base);		/* %es */
+	gdbserver_set_register(AMD64_FS_REGNUM, sregs.fs.base);		/* %fs */
+	gdbserver_set_register(AMD64_GS_REGNUM, sregs.gs.base);		/* %gs */
+}
+
 
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 int main(int argc, char **argv)
@@ -364,6 +406,10 @@ int main(int argc, char **argv)
 	#endif
 
 	kvm_set_guest_debug(vcpu_fd, entry_point);
+
+	gdb_submit_registers(vcpu_fd);
+	gdbserver_start();
+
 
 	// a questo punto possiamo inizializzare le strutture per l'emulazione dei dispositivi di IO
 	initIO();

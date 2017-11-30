@@ -11,13 +11,16 @@ BACKEND_OBJ_FILES = $(patsubst backend/%.cpp,backend/%.o,$(BACKEND_CPP_FILES))
 ELF_OBJ_FILES = elf/elf32.o elf/elf64.o elf/estrattore.o elf/interp.o
 ELF_HEADER_FILES := $(wildcard elf/*.h)
 
+GDBSERVER_OBJ_FILES = gdbserver/gdbserver.o
+GDBSERVER_HEADER_FILES := $(wildcard gdbserver/*.h)
+
 
 ## -- linking
 
 all: kvm build/boot64 build/prog_prova build/keyboard_program build/ricorsivo
 
-kvm: kvm.o bootloader/Bootloader.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES)
-	g++ kvm.o bootloader/Bootloader.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) -o kvm $(LD_FLAGS)
+kvm: kvm.o bootloader/Bootloader.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) $(GDBSERVER_OBJ_FILES)
+	g++ kvm.o bootloader/Bootloader.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) $(GDBSERVER_OBJ_FILES) -o kvm $(LD_FLAGS)
 
 build/prog_prova: target/prog_prova.c target/prog_prova.s
 	gcc $(ELFPROG_CFLAGS) target/prog_prova.c target/prog_prova.s -o build/prog_prova
@@ -42,6 +45,9 @@ backend/%.o: backend/%.cpp backend/%.h
 	g++ -c -o $@ $< $(COMM_CFLAGS)
 
 elf/%.o: elf/%.cpp $(ELF_HEADER_FILES)
+	g++ -c -o $@ $< $(COMM_CFLAGS)
+
+gdbserver/%.o: gdbserver/%.cpp $(GDBSERVER_HEADER_FILES)
 	g++ -c -o $@ $< $(COMM_CFLAGS)
 
 bootloader/Bootloader.o: bootloader/Bootloader.cpp bootloader/Bootloader.h
