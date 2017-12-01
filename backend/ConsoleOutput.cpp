@@ -21,7 +21,6 @@ void ConsoleOutput::resetConsole()
 	tcsetattr(STDOUT_FILENO, TCSAFLUSH, &tty_attr_old);
 
 	// lanciamo un reset console
-	//printf("\033c");
 	cout<<RESET_CONSOLE;
 }
 
