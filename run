@@ -20,7 +20,7 @@ rm -f $FIFOLOGPATH
 mkfifo $FIFOLOGPATH
 
 # we start the terminal in another window executing kvm with the parameter passed to the script and set the log on the named pipe
-xterm -fn "-misc-*-medium-*-*-*-*-*-100-*-*-70-*-*" -T "Mario G.C.A. Lettieri" -e "$SCRIPTPATH/kvm $1 -logfile $FIFOLOGPATH" &
+xterm -fn "-misc-*-medium-*-*-*-*-*-100-*-*-70-*-*" -T "EndlessFault" -e "$SCRIPTPATH/kvm $1 -logfile $FIFOLOGPATH" &
 
 #in the meanwhile we acquire kvm writes on the named pipe
 cat < $FIFOLOGPATH
