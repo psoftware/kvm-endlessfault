@@ -42,11 +42,10 @@ using namespace std;
 #include <linux/kvm.h>
 
 
-// memoria del guest
-uint32_t GUEST_PHYSICAL_MEMORY_SIZE = 8*1024*1024; // Memoria Fisica del guest a 2MB
+// guest memory
+uint32_t GUEST_PHYSICAL_MEMORY_SIZE = 8*1024*1024; //default guest physical memory to 8MB
 //unsigned char guest_physical_memory[GUEST_PHYSICAL_MEMORY_SIZE] __attribute__ ((aligned(4096)));
 unsigned char *guest_physical_memory = NULL;
-unsigned char dumb_stack_memory[4096] __attribute__ ((aligned(4096)));
 
 // modalità di debug con gdb
 bool debug_mode;
@@ -325,11 +324,11 @@ int main(int argc, char **argv)
     }
 
 
-    mem_size = reader.GetInteger("vm-spec", "memsize", -1);
+    mem_size = reader.GetInteger("vm-spec", "memsize", 8);
     serv_port = reader.GetInteger("debug-server", "port", -1);
     cout << "Config loaded from 'config.ini': server-port=" << serv_port <<" mem-size=" << mem_size << endl;
              
-    if( mem_size > 2 && mem_size < 128 ){
+    if( mem_size >= 8 && mem_size < 128 ){
     	GUEST_PHYSICAL_MEMORY_SIZE = mem_size*1024*1024;
     }
  	
@@ -397,20 +396,6 @@ int main(int argc, char **argv)
 	/* now we can add the memory to the vm */
 	if (ioctl(vm_fd, KVM_SET_USER_MEMORY_REGION, &mrd) < 0) {
 		cout << "set memory (guest_physical_memory): " << strerror(errno) << endl;
-		return 1;
-	}
-
-	kvm_userspace_memory_region mrd2 = {
-		1,					// slot
-		0,					// no flags,
-		0xfffff000,					// guest physical addr
-		4096,					// memory size
-		reinterpret_cast<__u64>(dumb_stack_memory)		// userspace addr
-	};
-
-	/* now we can add the memory to the vm */
-	if (ioctl(vm_fd, KVM_SET_USER_MEMORY_REGION, &mrd2) < 0) {
-		cout << "set memory (dumb_stack_memory): " << strerror(errno) << endl;
 		return 1;
 	}
 
