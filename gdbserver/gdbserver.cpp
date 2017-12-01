@@ -399,7 +399,7 @@ void handle_exception(int exceptionVector)
 								mem_err = 0;
 								hex2mem(ptr, reinterpret_cast<char*>(guest_physical_memory + addr), length);
 								strcpy(remcomOutBuffer, "OK");
-								ptr = '\0';
+								ptr = NULL;
 							}
 				if(ptr)
 					strcpy(remcomOutBuffer, "E02");
