@@ -11,10 +11,10 @@ ConsoleInput::ConsoleInput() : attached_keyboard(0), is_shifted(false)
 {
 	struct termios tty_attr;
 
-	// salviamo la modalità di funzionamento attuale di stdin per ripristinarla alla chiusura
+	// we save current stdin operating mode in order to restore it on termination
 	tcgetattr(STDIN_FILENO, &tty_attr_old);
 
-	// disabilitiamo alcune funzionalità dello stream stdin (echoing, flush su newline, etc)
+	// we disable some stdin stream features (echoing, newline flush, etc)
 	tcgetattr(STDIN_FILENO, &tty_attr);
 	tty_attr.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
 	tty_attr.c_lflag &= ~(ICANON | ECHO | ECHONL | IEXTEN);
@@ -25,25 +25,25 @@ ConsoleInput::ConsoleInput() : attached_keyboard(0), is_shifted(false)
 
 ConsoleInput::~ConsoleInput()
 {
-	// la console va ripristinata
+	// restore the console to the initial state
 	resetConsole();
 }
 
 ConsoleInput* ConsoleInput::getInstance()
 {
-	// seguiamo il design pattern Singleton
+	// follow Singleton pattern
 	static ConsoleInput unique_instance;
 	return &unique_instance;
 }
 
 void ConsoleInput::resetConsole()
 {
-	// resettiamo lo stato della console utilizzando l'oggetto salvatoci nel costruttore
+	// reset the console state using the object saved in the constructor
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &tty_attr_old);
 }
 
 bool ConsoleInput::attachKeyboard(keyboard *kb) {
-	// può essere collegata solo una tastiera e solo per una volta
+	// only one keyboard can be connected and only once
 	if(attached_keyboard != NULL)
 		return false;
 
@@ -51,62 +51,55 @@ bool ConsoleInput::attachKeyboard(keyboard *kb) {
 }
 
 bool ConsoleInput::startEventThread() {
-	// non possiamo continuare se la tastiera non è stata collegata oppure se abbiamo già
-	// avviato il thread
+
+	// we cannot continue if the keyboard is not connected or if we have started the thread
 	if(_thread != 0 || attached_keyboard == NULL)
 		return false;
 
-	// lasciamo al thread il compito di ottenere l'input dalla console
+	// console input managed by the thread
 	pthread_create(&_thread, NULL, &ConsoleInput::_mainThread, this);
 }
 
 void* ConsoleInput::_mainThread(void *This_par)
 {
-	// con pthread_create non è possibile fare chiamate su metodi non statici delle classi,
-	// per questo motivo "emuliamo" un metodo non statico definendone uno statico alla quale
-	// passiamo il parametro this, in questo caso chiamato This_par
+
 	ConsoleInput* This = (ConsoleInput*)This_par;
 
 	char newchar;
 	int res;
 
-	// la read ci restituisce la codifica in ASCII dei caratteri
-	// inseriti nella console, appena questi sono disponibili
+	// read method returns the ASCII code of the inserted char as soon as they are available
 	do {
 		res = read(0, &newchar, 1);
 
-		// procediamo alla conversione
+		// conversion
 		bool new_shift = This->is_shifted;
 		uint8_t newkeycode = ascii_to_keycode(newchar, new_shift);
 
-		// dobbiamo emulare i keycode, i quali gestiscono l'evento shift in maniera particolare.
-		// ogni qual volta shift viene premuto o rilasciatova mandato un determinato keycode,
-		// diverso dal carattere digitato
+		// When shift is pressed or released a certain keycode has to be sent which is different from the typed char
 		if(This->is_shifted != new_shift && new_shift == true)
 			This->attached_keyboard->insert_keycode_event(0x2a);
 		else if(This->is_shifted != new_shift && new_shift == false)
 			This->attached_keyboard->insert_keycode_event(0xaa);
 		This->is_shifted = new_shift;
 
-		// se il keycode è stato correttamente convertito allora procediamo all'invio
-		// dell'evento di keydown e in seguito keyup (per emulare l'evento di press)
+		// if the keycode is correctly converted then we send keydown event and then keyup event(in order to emulate press event)
 		if(newkeycode)
 		{
 			#ifdef DEBUG_LOG
-			logg << "console: inoltrato (down) " << (unsigned int)newkeycode << endl;
+			logg << "console: forwarded (down) " << (unsigned int)newkeycode << endl;
 			#endif
 			This->attached_keyboard->insert_keycode_event(newkeycode);
 			#ifdef DEBUG_LOG
-			logg << "console: inoltrato (up)" << (unsigned int)(newkeycode | 0x80) << endl;
+			logg << "console: forwarded (up)" << (unsigned int)(newkeycode | 0x80) << endl;
 			#endif
 			This->attached_keyboard->insert_keycode_event(newkeycode | 0x80);
 		}
 	}
-	// tecnicamente res non dovrebbe essere mai < 0
+	//  res should be > 0
 	while(res >= 0);
 }
 
-// tabella delle traduzioni
 ConsoleInput::encode_table ConsoleInput::enc_t = {
 		{	// tab
 			0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
@@ -139,29 +132,26 @@ ConsoleInput::encode_table ConsoleInput::enc_t = {
 
 uint8_t ConsoleInput::ascii_to_keycode(uint8_t ascii_c, bool& shift)
 {
-	// scorriamo i caratteri non shiftati
+	// non-shifted char
 	short pos = 0;
 	while (pos < encode_table::MAX_CODE && enc_t.tabmin[pos] != ascii_c)
 		pos++;
 
-	// se non abbiamo trovato nulla cerchiamo tra quelli shiftati 
-	// ma teniamone conto
+	// if not we looking for non-shifted ones 
 	if(pos == encode_table::MAX_CODE)
 	{
 		pos = 0;
 		while (pos < encode_table::MAX_CODE && enc_t.tabmai[pos] != ascii_c)
 			pos++;
 
-		// se non abbiamo trovato nulla neanche al secondo tentativo
-		// restituiamo un carattere nullo
+		// if not we return null char
 		if(pos == encode_table::MAX_CODE)
 			return 0;
 
-		// assegnamo qui lo shift per evitare di farlo nel caso il carattere
-		// non è stato trovato
+		// we assign here the shift to avoid doing it in case the char was not found
 		shift = true;
 	}
-	else	// se abbiamo trovato il carattere nella prima tabella allora il carattere non è shiftato
+	else // if we find the char in the first tab then the char is not shifted
 		shift = false;
 
 	return enc_t.tab[pos];

@@ -7,7 +7,7 @@
 
 class serial_port {
 private:
-	// === Registri ===
+	// === Registers ===
 	uint8_t THR;	// Transmitter Holding Buffer
 	uint8_t RBR;	// Receiver Buffer
 	uint8_t DLL;	// Divisor Latch Low Byte
@@ -21,11 +21,10 @@ private:
 	uint8_t MSR;	// Modem Status Register
 	uint8_t SR;		// Scratch Register
 
-	// indirizzi registri
+	// base address registers
 	io_addr base_addr;
 
-	// gli indirizzi li inizializziamo dal costruttore perchè sono un
-	// offset di base_addr
+	//initialization in the constructor because they depend on base_addr
 	const uint16_t THR_addr;
 	const uint16_t RBR_addr;
 	const uint16_t DLL_addr;
@@ -39,11 +38,10 @@ private:
 	const uint16_t MSR_addr;
 	const uint16_t SR_addr;
 
-	// instanza di ConsoleLog per mostrare a video i risultati
+	// ConsoleLog instance to show results
 	ConsoleLog& logg;
 
 public:
-	// costruttore
 	serial_port(io_addr base_addr, ConsoleLog& logg);
 
 	void write_reg_byte(io_addr addr, uint8_t val);

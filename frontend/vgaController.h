@@ -17,13 +17,13 @@ extern ConsoleLog& logg;
 class VGAController : public IODevice{
 
 private:
-	// === Registri ===
-	uint8_t IND;	// contiene l'indirizzo del registro selezionato
-	uint8_t DAT;	// contiene il dato da leggere o scrivere nel registro selezionato
-	uint8_t CUR_HIGH; // contiene il valore della parte alta della posizione del cursore
-	uint8_t CUR_LOW; // contiene il valore della parte bassa della posizione del cursore
+	// === Registers ===
+	uint8_t IND;	// it contains the selected register address
+	uint8_t DAT;	// it contains the value to be read or written
+	uint8_t CUR_HIGH; // it contains the value of the high-part of the cursor position
+	uint8_t CUR_LOW; // it contains the value of the low-part of the cursor position
 
-	// indirizzi registri
+	// Registers Address 
 	static const io_addr IND_addr = 0x03D4;
 	static const io_addr DAT_addr = 0x03D5;
 	static const uint8_t CUR_HIGH_ind = 0x0e;

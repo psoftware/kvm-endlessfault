@@ -8,7 +8,7 @@ ConsoleLog::ConsoleLog() : logstream(0)
 
 ConsoleLog* ConsoleLog::getInstance()
 {
-	// seguiamo il design pattern Singleton
+	// Singleton Pattern
 	static ConsoleLog unique_instance;
 	return &unique_instance;
 }

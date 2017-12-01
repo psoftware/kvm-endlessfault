@@ -10,24 +10,20 @@ ConsoleOutput::ConsoleOutput(){
 
 ConsoleOutput::~ConsoleOutput()
 {
-	// la console va ripristinata
 	resetConsole();
 }
 
 
 void ConsoleOutput::resetConsole()
 {
-	// resettiamo lo stato della console utilizzando l'oggetto salvatoci nel costruttore
 	tcsetattr(STDOUT_FILENO, TCSAFLUSH, &tty_attr_old);
 
-	// lanciamo un reset console
 	cout<<RESET_CONSOLE;
 }
 
 
 ConsoleOutput* ConsoleOutput::getInstance()
 {
-	// seguiamo il design pattern Singleton
 	static ConsoleOutput unique_instance;
 	return &unique_instance;
 }

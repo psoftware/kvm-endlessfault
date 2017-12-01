@@ -69,7 +69,7 @@ uint8_t serial_port::read_reg_byte(io_addr addr) {
 		return MCR;
 	}
 	else if(addr==LSR_addr) {
-		// facciamo sembrare che la porta sia sempre disponibile a ricevere dati
+		// let's make it appear that the port is always available to receive data
 		LSR |= 0x20;
 		return LSR;
 	}

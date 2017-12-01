@@ -8,29 +8,28 @@
 
 class ConsoleLog {
 private:
-	// il costruttore è privato perchè vogliamo seguire il design pattern Singleton
+	// private constructor because we want to apply Singleton design pattern
 	ConsoleLog();
 
-	// stessa cosa per il construttore di copia
+	// same thing for copy constructor
 	ConsoleLog(ConsoleLog const&);
 
-	// e per l'operatore di assegnamento
+	// and for assignament operator
 	void operator=(ConsoleLog const&);
 
-	// istanza dello stream
+	// stream instance
 	std::ostream *logstream;
 
-	// vogliamo un'implementazione thread safe di questa libreria
 	pthread_mutex_t mutex;
 
 public:
-	// seguiamo il design pattern Singleton
+	// follow Singleton pattern
 	static ConsoleLog* getInstance();
 
-	// possiamo cambiare il logfile in qualsiasi momento
+	// to change log file path
 	void setFilePath(const char* filepath);
 
-	// la nostra istanza si comporterà similmente ad uno stream
+	// the instance will behave as a stream
 	template<typename T>
 	ConsoleLog& operator << (T&& x)
 	{

@@ -57,7 +57,7 @@ extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 #define PDE64_PS (1 << 7)
 #define PDE64_G (1 << 8)
 
-// logger globale
+// global logger
 extern ConsoleLog& logg;
 
 extern uint8_t bootloader_code[];
@@ -102,7 +102,7 @@ void Bootloader::setup_protected_mode(kvm_sregs *sregs)
 	seg.dpl = 0;
 	seg.db = 1;
 	seg.s = 1; /* Code/data */
-	seg.l = 0; /* non è un segmento da 64 bit */
+	seg.l = 0; /* not a 64 bit segment */
 	seg.g = 1; /* 4KB granularity */
 
 	uint64_t *gdt;
@@ -146,7 +146,7 @@ void Bootloader::setup_page_tables(kvm_sregs *sregs)
 	//tab liv 2
 	for(uint16_t i_liv2=0; i_liv2<512; i_liv2++)
 	{
-		// stiamo lavorando con pagine che indirizzano 2MiB usando bit PS
+		// we are working with pages which address 2MiB using PS bit
 		pd[i_liv2] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS | ((((uint64_t)i_liv2)*1024*1024*2));
 		//logg << "pd[" << std::dec << i_liv2 << "]=" << std::hex << pd[i_liv2] << "\n";
 	}
@@ -233,29 +233,28 @@ int Bootloader::run_long_mode()
 		exit(1);
 	}
 
-	// passiamo alla modalità protetta
+	// switch to protected mode
 	setup_protected_mode(&sregs);
 
-	// creiamo la finestra di memoria (1GiB)
+	// create 1GiB memory window
 	setup_page_tables(&sregs);
 
-	// inoltriamo le modifiche fatte ai registri dei segmenti a KVM
+	// send the segments registers changes to KVM
 	if (ioctl(vcpu_fd_, KVM_SET_SREGS, &sregs) < 0) {
 		perror("KVM_SET_SREGS");
 		exit(1);
 	}
 
-	// inizializziamo i registri
+	// registers initialization
 	memset(&regs, 0, sizeof(regs));
 	regs.rflags = 2;
 
-	// carichiamo il codice del bootloader a partire dall'indirizzo 0
-	//memcpy(guest_mem_,bootloader_code,BOOTLOADER_DIM);
+	// we load bootloader code starting to address 0
 	char bootloader_elf[] = "build/boot64";
-	// l'entry point del bootloader
+	// bootloader entry point
 	regs.rip = estrai_segmento(bootloader_elf, guest_mem_, 0x10000);
 
-	// il bootloader si aspetta che l'entry_point del programma da avviare sia in %rdi
+	// target program entry point is in %rdi
 	regs.rdi = entry_point_;
 	// va sistemato, E' COMPETENZA DEL BOOTLOADER
 	regs.rsp = start_stack_;

@@ -34,14 +34,14 @@ void VGAController:: write_reg_byte(io_addr addr, uint8_t val){
 				break;
 
 				default:
-					logg<<"VGA : Registro selezionato non valido"<<endl;
+					logg<<"VGA : Register not valid"<<endl;
 			}
 
 		break;
 
 		default:
 
-			logg<<"VGA : Indirizzo selezionato non valido"<<endl;
+			logg<<"VGA : Address not valid"<<endl;
 
 	}
 
@@ -76,13 +76,13 @@ uint8_t VGAController::read_reg_byte(io_addr addr)
 				break;
 
 				default:
-					logg<<"VGA : Registro selezionato non valido"<<endl;
+					logg<<"VGA : Register not valid"<<endl;
 			}
-			
+
 		break;
 
 		default:
-			logg<<"VGA : Indirizzo selezionato non valido"<<endl;
+			logg<<"VGA : Address not valid"<<endl;
 
 	}
 

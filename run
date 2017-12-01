@@ -1,27 +1,26 @@
 #!/bin/bash
 
-# controllo numero parametri
+# check parameters number
 if [ "$#" -ne 1 ]; then
-    echo "Parametri errati. Uso: ./run <elf file>"
+    echo "Error on parameters. Use: ./run <elf file>"
     exit
 fi
 
-# controllo file
+# check file
 if [ ! -f "$1" ]; then
-	echo "File $1 non esistente"
+	echo "File $1 not exists"
 	exit
 fi
 
 FIFOLOGPATH="fifo.log"
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 
-# creiamo la Named Pipe
+# create the Named Pipe
 rm -f $FIFOLOGPATH
 mkfifo $FIFOLOGPATH
 
-# avviamo il terminale in un'altra finestra, facendo eseguire kvm con il parametro
-# passato allo script e impostando il log sulla Named Pipe
+# we start the terminal in another window executing kvm with the parameter passed to the script and set the log on the named pipe
 xterm -fn "-misc-*-medium-*-*-*-*-*-100-*-*-70-*-*" -T "Mario G.C.A. Lettieri" -e "$SCRIPTPATH/kvm $1 -logfile $FIFOLOGPATH" &
 
-# nel frattempo acquisiamo ciò che kvm scrive nella Named Pipe
+#in the meanwhile we acquire kvm writes on the named pipe
 cat < $FIFOLOGPATH

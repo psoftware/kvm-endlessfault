@@ -44,69 +44,71 @@ using namespace std;
 
 // guest memory
 uint32_t GUEST_PHYSICAL_MEMORY_SIZE = 8*1024*1024; //default guest physical memory to 8MB
-//unsigned char guest_physical_memory[GUEST_PHYSICAL_MEMORY_SIZE] __attribute__ ((aligned(4096)));
 unsigned char *guest_physical_memory = NULL;
 
-// modalità di debug con gdb
+// flag to check kvm debug mode
 bool debug_mode;
 
-// logger globale
+// global logger
 ConsoleLog& logg = *ConsoleLog::getInstance();
 
-// tastiera emulata (frontend)
+// emulated keyboard (frontend)
 keyboard keyb;
 
-// COM1 emulata (frontend)
+// emulated serial port (frontend)
 serial_port* com1;
 serial_port* com2;
 serial_port* com3;
 serial_port* com4;
 
-// gestione input console (backend)
+// keyboard backend
 ConsoleInput* console_in;
 
+//text mode video memory emulation  
 ConsoleOutput* console_out;
-VGAController vga;
+VGAController vga; // emulated vga controller
 
 void endIO(int val)
 {
-	// questa operazione va fatta perchè altrimenti la console
-	// non tornebbe nello stato di funzionamento precedente
-	// all'instanziazione dell'oggetto ConsoleInput
+	//in order to restore the previous console state before the instantiation
 	console_out->resetConsole();
 	console_in->resetConsole();
 
-	// chiudiamo il programma
+	// close the program
 	exit(0);
 }
 
 void initIO()
 {
-	// colleghiamo la tastiera emulata all'input della console
+	// link the emulated keyboard to the console input
 	console_in = ConsoleInput::getInstance();
 	console_in->attachKeyboard(&keyb);
 
-	// avviamo il thread che si occuperà di gestire l'input della console
+	// console input management thread
 	console_in->startEventThread();
 
-	// inizializziamo le porte seriali
+	// serial ports initialization
 	com1 = new serial_port(0x3f8, logg);
 	com2 = new serial_port(0x2f8, logg);
 	com3 = new serial_port(0x3e8, logg);
 	com4 = new serial_port(0x2e8, logg);
 
-	vga.setVMem((uint16_t*)(guest_physical_memory + 0xB8000));
+	vga.setVMem((uint16_t*)(guest_physical_memory + 0xB8000)); // set text mode video memory offset
+
+	// link the emulated vga controller to the backend
 	console_out = ConsoleOutput::getInstance();
 	console_out->attachVGA(&vga);
+
+	// start console output threads
 	console_out->startThread();
 
+	// handle ctrl+c termination in order to restore the console state
 	atexit([](){endIO(0);});
 	signal(SIGINT, endIO);
 }
 
 
-// funzione chiamata su HLT del programma della vm per ottenere
-// un risultato dal programma
+// function called on HLT vm program to obtain a program result
 void fetch_application_result(int vcpu_fd, kvm_run *kr) {
 	/* we can obtain the the contents of all the registers
 	 * in the vm.
@@ -116,11 +118,8 @@ void fetch_application_result(int vcpu_fd, kvm_run *kr) {
 		logg << "get regs: " << strerror(errno) << endl;
 		return;
 	}
-	/* (this is for the general purpose registers, we can also
-	 * obtain the 'special registers' with KVM_GET_SREGS).
-	 */
 
-	logg << std::dec << "Risultato programma (keycode): " << regs.rax << endl;
+	logg << std::dec << "Program result (keycode): " << regs.rax << endl;
 }
 
 void trace_user_program(int vcpu_fd, kvm_run *kr) {
@@ -253,7 +252,6 @@ void kvm_debug_set_step(bool enable_step)
 void kvm_enable_guest_debug(int vcpu_fd, uint64_t breakpoint_addr)
 {
 	debug_vcpu_id = vcpu_fd;
-	// KVM_GUESTDBG_SINGLESTEP
 	guest_debug.control = KVM_GUESTDBG_ENABLE | KVM_GUESTDBG_USE_HW_BP | KVM_GUESTDBG_USE_SW_BP;
 	//guest_debug.arch.debugreg[0] = breakpoint_addr; // DR0
 	//guest_debug.arch.debugreg[7] = 0x1; // DR7
@@ -276,12 +274,13 @@ void kvm_debug_completed(int vcpu_fd)
 
 void kvm_handle_debug_exit(int vcpu_fd, kvm_debug_exit_arch dbg_arch)
 {
-	// la cache dei registri del gdbserver va aggiornata
+	// refresh gdbserver registers cache 
 	gdb_submit_registers(vcpu_fd);
-	// rip però va aggiornato col valore che aveva prima che il trap si scatenasse
+
+	// restore rip to the value before the trap exception
 	gdbserver_set_register(AMD64_RIP_REGNUM, dbg_arch.pc);
 
-	// segnaliamo a gdb che è avvenuta un'eccezione dovuta a un breakpoint (tipo 3)
+	// report to gdb a breakpoint exception (type 3)
 	handle_exception(3);
 }
 
@@ -293,20 +292,20 @@ int main(int argc, char **argv)
 	uint32_t mem_size;
 	uint16_t serv_port;
 
-	// controllo parametri in ingresso
+	// check input parameters
 	if(argc != 2 && (argc ==1 || argc == 3 || (argc == 4 && strcmp(argv[2], "-logfile"))) ) {
-		cout << "Formato non corretto. Uso: kvm <elf file> [-logfile filefifo]" << endl;
+		cout << "Format not correct. Use: kvm <elf file> [-logfile filefifo]" << endl;
 		return 1;
 	}
 
 
-	// ci è stato richiesto di utilizzare un file specifico per il logging
+	// if a specified file to log into
 	if(argc == 4 && !strcmp(argv[2], "-logfile"))
 		logg.setFilePath(argv[3]);
 	else
 		logg.setFilePath("console.log");
 
-	// controllo validità del path
+	// check path validity
 	char *elf_file_path = argv[1];
 	FILE *elf_file = fopen(elf_file_path, "r");
 	if(!elf_file) {
@@ -315,7 +314,7 @@ int main(int argc, char **argv)
 	}
 	fclose(elf_file);
 
-	// carico file di configurazione
+	// load configuration file
 	INIReader reader("config.ini");
 
     if (reader.ParseError() < 0) {
@@ -399,15 +398,15 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	// carichiamo l'eseguibile da file
+	// load elf file
 	uint64_t entry_point = estrai_segmento(elf_file_path, (void*)guest_physical_memory, GUEST_PHYSICAL_MEMORY_SIZE);
 
-	// Avviamo il server di debug
+	// start debug server
 	try {
 		DebugServer debugs(serv_port,GUEST_PHYSICAL_MEMORY_SIZE,guest_physical_memory);
 		debugs.start();
 	} catch( ... ) {
-		logg << "impossibile aprire il server di debug" << endl;
+		logg << "Not possible to open gdb server" << endl;
 	}
 	/* now we add a virtual cpu (vcpu) to our machine. We obtain yet
 	 * another open file descriptor, which we can use to
@@ -459,7 +458,6 @@ int main(int argc, char **argv)
 
 	Bootloader bootloader(vcpu_fd,guest_physical_memory,entry_point,0x400000L);
 	bootloader.run_long_mode();
-	//bootloader.run_protected_mode();
 
 	#ifdef DEBUG_LOG
 	dump_memory(0x200000, 512);
@@ -467,20 +465,20 @@ int main(int argc, char **argv)
 
 	// ========== GDB Server ==========
 	if(debug_mode = reader.GetBoolean("gdb-server", "enable", false)) {
-		// configuriamo kvm affinchè attivi le EXIT_DEBUG
+		// enable kvm EXIT_DEBUG
 		kvm_enable_guest_debug(vcpu_fd, entry_point);
 
-		// aggiorniamo la cache dei registri di gdb
+		// refresh gdb cache registers
 		gdb_submit_registers(vcpu_fd);
 
-		// leggiamo i parametri necessari e avviamo il server per gdb
+		// read parameters and start gdb server
 		std::string gdb_address = reader.Get("gdb-server", "address", "127.0.0.1");
 		unsigned short gdb_port = reader.GetInteger("gdb-server", "port", -1);
 		gdbserver_start(gdb_address.c_str(), gdb_port);
 	}
 	// =================================
 
-	// a questo punto possiamo inizializzare le strutture per l'emulazione dei dispositivi di IO
+	// now we can initialize IO devices structures for emulation
 	initIO();
 
 	/* we are finally ready to start the machine, by issuing
@@ -508,11 +506,10 @@ int main(int argc, char **argv)
 				return 1;
 			case KVM_EXIT_IO:
 			{
-				// questo è il puntatore alla sez di memoria che contiene l'operando da restituire o leggere
-				// (in base al tipo di operazione che la vm vuole fare, cioè in o out)
+				// this is a pointer to the memory section which contains the operand to return or read (if there is a input or output operation)
 				uint8_t *io_param = (uint8_t*)kr + kr->io.data_offset;
 
-				// ======== Tastiera ========
+				// ======== Keyboard ========
 				if (kr->io.size == 1 && kr->io.count == 1 && (kr->io.port == 0x60 || kr->io.port == 0x64))
 				{
 					if(kr->io.direction == KVM_EXIT_IO_OUT)
@@ -560,11 +557,10 @@ int main(int argc, char **argv)
 					else if(kr->io.direction == KVM_EXIT_IO_IN)
 							*io_param = com4->read_reg_byte(kr->io.port);
 				}
-				// ======== Registri Controller PCI ========
+				// ======== Controller PCI Registers ========
 				else if(kr->io.port == 0xcfc || kr->io.port == 0xcf8)
 				{
-					// skippiamo i warning perchè i programmi target iterano sui dispositivi del bus pci
-					// e rallentano l'esecuzione del programma
+					// target programs iterate on bus pci devices and slow down the execution of the program so we skip those warnings
 				}
 				else
 				{
@@ -597,7 +593,7 @@ int main(int argc, char **argv)
 				logg << "kvm: KVM_EXIT_DEBUG" << endl;
 				kvm_handle_debug_exit(vcpu_fd, kr->debug.arch);
 				break;
-			// ================== Condizioni di errore ==================
+			// ================== Error Conditions ==================
 			case KVM_EXIT_FAIL_ENTRY:
 				logg << "kvm: KVM_EXIT_FAIL_ENTRY reason=" << std::dec << (unsigned long long)kr->fail_entry.hardware_entry_failure_reason << endl;
 				trace_user_program(vcpu_fd, kr);
@@ -615,7 +611,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	// procediamo con la routine di ripristino dell'IO
+	// restore IO
 	endIO(0);
 
 	return 0;

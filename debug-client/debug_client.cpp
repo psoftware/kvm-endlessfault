@@ -10,7 +10,7 @@ void stampa_indirizzo( struct sockaddr_in *addr )
 	char str[16];
 	inet_ntop(AF_INET, &addr->sin_addr, str, 16);
 	printf("ip: %s",str);
-	printf("porta: %hu", ntohs(addr->sin_port));
+	printf("port: %hu", ntohs(addr->sin_port));
 }
 
 int main(int argc, char* argv[])
@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 
 	if( argc < 3 )
 	{
-		printf("uso: ./debug-client <host remoto> <porta>\n");
+		printf("use: ./debug-client <host remoto> <porta>\n");
 		return -1;
 	}
 
@@ -32,10 +32,10 @@ int main(int argc, char* argv[])
 	ret = inet_pton(AF_INET, argv[1], (void*)&serv_addr.sin_addr);
 	if( ret!=1 )
 	{
-		printf("Errore ip del server non valido.\n");
+		printf("Errore: server ip not valid.\n");
 		return -1;
 	}
-	/*ricavo la porta del server*/
+	/*get server port*/
 	sscanf(argv[2],"%hu", &serv_addr.sin_port);
 	/*converto in big endian*/
 	serv_addr.sin_port = htons(serv_addr.sin_port); 
@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
 	recv_data(sd, &my_buff);
 	printf("-----------Memory dump------------\n");
 	for(uint32_t i=0; i<my_buff.size; i++)
-		printf("%x",my_buff.buf[i]);
+		printf("%02x",my_buff.buf[i]);
 	printf("----------------------------------\n");
 	return 0;
 }
