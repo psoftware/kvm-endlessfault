@@ -21,7 +21,7 @@ mkfifo $FIFOLOGPATH
 
 # avviamo il terminale in un'altra finestra, facendo eseguire kvm con il parametro
 # passato allo script e impostando il log sulla Named Pipe
-xterm -fn "-misc-*-medium-*-*-*-*-*-100-*-*-70-*-*" -T "Mario G.C.A. Lettieri" -e "$SHELL -c \"$SCRIPTPATH/kvm $1 -logfile $FIFOLOGPATH\"" &
+xterm -fn "-misc-*-medium-*-*-*-*-*-100-*-*-70-*-*" -T "Mario G.C.A. Lettieri" -e "$SCRIPTPATH/kvm $1 -logfile $FIFOLOGPATH" &
 
 # nel frattempo acquisiamo ciò che kvm scrive nella Named Pipe
 cat < $FIFOLOGPATH
