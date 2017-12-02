@@ -151,7 +151,7 @@ void Bootloader::setup_page_tables(kvm_sregs *sregs)
 	//tab liv 2
 	for(uint32_t i_liv2=0; i_liv2<512; i_liv2++)
 	{
-		if( i_liv2 < n_entry_liv2 ) {
+		if( i_liv2 < n_entry_liv2 || i_liv2==127 ) {
 			// we are working with pages which address 2MiB using PS bit
 			pd[i_liv2] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS | ((((uint64_t)i_liv2)*1024*1024*2));
 		} else {
