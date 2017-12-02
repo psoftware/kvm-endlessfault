@@ -225,12 +225,12 @@ void gdb_submit_registers(int vcpu_fd)
 	gdbserver_set_register(AMD64_R15_REGNUM, regs.r15);		/* %r15 */
 	gdbserver_set_register(AMD64_RIP_REGNUM, regs.rip);		/* %rip */
 	gdbserver_set_register(AMD64_EFLAGS_REGNUM, regs.rflags);		/* %eflags */
-	gdbserver_set_register(AMD64_CS_REGNUM, sregs.cs.base);		/* %cs */
-	gdbserver_set_register(AMD64_SS_REGNUM, sregs.ss.base);		/* %ss */
-	gdbserver_set_register(AMD64_DS_REGNUM, sregs.ds.base);		/* %ds */
-	gdbserver_set_register(AMD64_ES_REGNUM, sregs.es.base);		/* %es */
-	gdbserver_set_register(AMD64_FS_REGNUM, sregs.fs.base);		/* %fs */
-	gdbserver_set_register(AMD64_GS_REGNUM, sregs.gs.base);		/* %gs */
+	gdbserver_set_register(AMD64_CS_REGNUM, sregs.cs.selector);		/* %cs */
+	gdbserver_set_register(AMD64_SS_REGNUM, sregs.ss.selector);		/* %ss */
+	gdbserver_set_register(AMD64_DS_REGNUM, sregs.ds.selector);		/* %ds */
+	gdbserver_set_register(AMD64_ES_REGNUM, sregs.es.selector);		/* %es */
+	gdbserver_set_register(AMD64_FS_REGNUM, sregs.fs.selector);		/* %fs */
+	gdbserver_set_register(AMD64_GS_REGNUM, sregs.gs.selector);		/* %gs */
 }
 
 kvm_guest_debug guest_debug;
