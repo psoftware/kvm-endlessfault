@@ -13,18 +13,18 @@ typedef enum
 	SERVER_QUIT,
 } message_type;
 
-typedef struct simple_mess_t
+typedef struct simple_msg_t
 {
 	message_type t;
 	time_t timestamp;
-}__attribute__((packed)) simple_mess;
+}__attribute__((packed)) simple_msg;
 
-typedef struct send_info_t
+typedef struct info_msg_t
 {
 	message_type t;
 	time_t timestamp;
 	uint64_t mem_size;
-}__attribute__((packed)) send_info;
+}__attribute__((packed)) info_msg;
 
 typedef struct req_dump_mem_t
 {
@@ -49,8 +49,8 @@ void convert_to_network_order(void* msg);
 ********************************************/
 void convert_to_host_order(void* msg);
 
-void init_simple_mess(simple_mess *mess, message_type t);
-void init_send_info_mess(send_info *mess, uint64_t mem_size);
+void init_simple_msg(simple_msg *msg, message_type t);
+void init_info_msg(info_msg *msg, uint64_t mem_size);
 void init_req_dump_mem(req_dump_mem *mess, uint64_t start_addr, uint64_t end_addr);
 #ifdef __cplusplus
 }

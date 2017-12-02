@@ -326,7 +326,7 @@ int main(int argc, char **argv)
     mem_size = reader.GetInteger("vm-spec", "memsize", 8);
     serv_port = reader.GetInteger("debug-server", "port", -1);
              
-    if( mem_size >= 8 && mem_size < 128 ){
+    if( mem_size >= 8 && mem_size < 1024 ){
     		mem_size = ((mem_size & 1UL) == 0) ? mem_size : mem_size+1;
     	GUEST_PHYSICAL_MEMORY_SIZE = mem_size*1024*1024;
     }
@@ -402,13 +402,6 @@ int main(int argc, char **argv)
 	// load elf file
 	uint64_t entry_point = estrai_segmento(elf_file_path, (void*)guest_physical_memory, GUEST_PHYSICAL_MEMORY_SIZE);
 
-	// start debug server
-	try {
-		DebugServer debugs(serv_port,GUEST_PHYSICAL_MEMORY_SIZE,guest_physical_memory);
-		debugs.start();
-	} catch( ... ) {
-		logg << "Not possible to open gdb server" << endl;
-	}
 	/* now we add a virtual cpu (vcpu) to our machine. We obtain yet
 	 * another open file descriptor, which we can use to
 	 * interact with the vcpu. Note that we can have several
@@ -419,6 +412,15 @@ int main(int argc, char **argv)
 		cout << "create vcpu: " << strerror(errno) << endl;
 		return 1;
 	}
+
+	// start debug server
+	try {
+		DebugServer debugs(serv_port,vcpu_fd,GUEST_PHYSICAL_MEMORY_SIZE,guest_physical_memory);
+		debugs.start();
+	} catch( ... ) {
+		logg << "Not possible to open gdb server" << endl;
+	}
+
 
 	/* the exchange of information between us and the vcpu is
 	 * via a 'kvm_run' data structure in shared memory, one

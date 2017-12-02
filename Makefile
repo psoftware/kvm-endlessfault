@@ -1,4 +1,4 @@
-COMM_CFLAGS=-std=gnu++14
+COMM_CFLAGS=-std=gnu++14 -g
 LD_FLAGS=-pthread
 ELFPROG_CFLAGS=-nostdlib -Ttext=0x200000 -fno-asynchronous-unwind-tables -m64 -Wl,--build-id=none -no-pie -Wl,-fuse-ld=gold
 
@@ -39,9 +39,6 @@ debug-client/debug_client: debug-client/debug_client.o debug-server/net_wrapper.
 
 kvm.o: kvm.cpp
 	g++ -c kvm.cpp -o kvm.o $(COMM_CFLAGS)
-
-#boot.o: boot.cpp boot.h
-#	g++ -c boot.cpp -o boot.o $(COMM_CFLAGS)
 
 frontend/%.o: frontend/%.cpp frontend/%.h
 	g++ -c -o $@ $< $(COMM_CFLAGS)

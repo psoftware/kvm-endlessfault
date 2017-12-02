@@ -110,7 +110,7 @@ int recv_data(int sockt, my_buffer* my_buff)
 	clear_my_buffer(my_buff);
 
 	received = recv(sockt, my_buff->buf, nbytes, 0);
-	
+
 	if( received != nbytes )
 		return -1;
 

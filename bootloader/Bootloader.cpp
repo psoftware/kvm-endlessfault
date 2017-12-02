@@ -158,7 +158,7 @@ void Bootloader::setup_page_tables(kvm_sregs *sregs)
 			// the page is not present
 			pd[i_liv2] = pd[i_liv2] & (~PDE64_PRESENT);
 		}
-		//logg << "pd[" << std::dec << i_liv2 << "]=" << std::hex << pd[i_liv2] << std::endl;
+		logg << "pd[" << std::dec << i_liv2 << "]=" << std::hex << pd[i_liv2] << std::endl;
 	}
 
 	sregs->cr3 = pml4_addr;
