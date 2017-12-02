@@ -30,7 +30,7 @@ void DebugServer::_main_fun(int serv_sockt, /*vector<thread *> &peers,*/ machine
 
 void DebugServer::_worker_fun(int sockt, machine_info mi)
 {
-	logg << "worker fun mem_size_:" << std::dec << mi.mem_size << " addr:" <<std::hex << mi.guest_mem_ptr << endl;
+//	logg << "worker fun mem_size_:" << std::dec << mi.mem_size << " addr:" <<std::hex << mi.guest_mem_ptr << endl;
 	my_buffer my_buf;
 	my_buf.size = 0;
 	my_buf.buf = NULL;

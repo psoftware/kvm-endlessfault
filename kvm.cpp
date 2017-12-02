@@ -325,12 +325,13 @@ int main(int argc, char **argv)
 
     mem_size = reader.GetInteger("vm-spec", "memsize", 8);
     serv_port = reader.GetInteger("debug-server", "port", -1);
-    cout << "Config loaded from 'config.ini': server-port=" << serv_port <<" mem-size=" << mem_size << endl;
              
     if( mem_size >= 8 && mem_size < 128 ){
+    		mem_size = ((mem_size & 1UL) == 0) ? mem_size : mem_size+1;
     	GUEST_PHYSICAL_MEMORY_SIZE = mem_size*1024*1024;
     }
- 	
+ 	logg << "GUEST_PHYSICAL_MEMORY_SIZE=" << GUEST_PHYSICAL_MEMORY_SIZE << endl;
+
  	guest_physical_memory = (unsigned char*)aligned_alloc(4096, GUEST_PHYSICAL_MEMORY_SIZE);
     if( guest_physical_memory == NULL )
     {
@@ -456,7 +457,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	Bootloader bootloader(vcpu_fd,guest_physical_memory,entry_point,0x400000L);
+	Bootloader bootloader(vcpu_fd,guest_physical_memory,GUEST_PHYSICAL_MEMORY_SIZE,entry_point,0x400000L);
 	bootloader.run_long_mode();
 
 	#ifdef DEBUG_LOG
