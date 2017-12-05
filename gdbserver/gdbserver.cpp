@@ -472,13 +472,13 @@ int initialize_server_socket(const char * bind_addr, int port)
 
 	if(bind(ret_sock, (struct sockaddr*)&my_addr, sizeof(my_addr)) == -1)
 	{
-		perror("Bind fallita");
-		exit(1);
+		logg << "initialize_server_socket: " << strerror(errno) << endl;
+		return -1;
 	}
 	if(listen(ret_sock, 10) == -1)
 	{
-		perror("Listen fallita");
-		exit(1);
+		logg << "initialize_server_socket: " << strerror(errno) << endl;
+		return -2;
 	}
 
 	return ret_sock;
@@ -523,7 +523,7 @@ bool gdbserver_start(const char* ip_addr, unsigned short port)
 	int server_socket = initialize_server_socket(ip_addr, port);
 	if(server_socket < 0)
 	{
-		logg << "gdbserver_start: creazione server_socket fallita" << endl;
+		logg << "gdbserver_start: creazione server_socket fallita, termino esecuzione." << endl;
 		exit(1);
 	}
 
