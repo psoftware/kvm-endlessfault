@@ -385,13 +385,10 @@ void gdbserver_handle_exception(int sigval)
 				break;
 
 				/* kill the program */
-			case 'k':		/* do nothing */
-		#if 0
-				/* Huh? This doesn't look like "nothing".
-					 m68k-stub.c and sparc-stub.c don't have it.  */
-				BREAKPOINT();
-		#endif
-				break;
+			case 'k':
+				gdbserver_stop();
+				exit(0);
+				return;
 		}			/* switch */
 
 		/* reply to the request */
