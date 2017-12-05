@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <string.h>
+#include <signal.h>
 #include <linux/kvm.h>
 
 #include "../backend/ConsoleLog.h"
@@ -199,64 +200,6 @@ char *hex2mem(char *buf, char *mem, int count)
 	return(mem);
 }
 
-/* this function takes the 386 exception vector and attempts to
-	 translate this number into a unix compatible signal value */
-int computeSignal(int exceptionVector)
-{
-	int sigval;
-	switch(exceptionVector)
-		{
-		case 0:
-			sigval = 8;
-			break;			/* divide by zero */
-		case 1:
-			sigval = 5;
-			break;			/* debug exception */
-		case 3:
-			sigval = 5;
-			break;			/* breakpoint */
-		case 4:
-			sigval = 16;
-			break;			/* into instruction (overflow) */
-		case 5:
-			sigval = 16;
-			break;			/* bound instruction */
-		case 6:
-			sigval = 4;
-			break;			/* Invalid opcode */
-		case 7:
-			sigval = 8;
-			break;			/* coprocessor not available */
-		case 8:
-			sigval = 7;
-			break;			/* double fault */
-		case 9:
-			sigval = 11;
-			break;			/* coprocessor segment overrun */
-		case 10:
-			sigval = 11;
-			break;			/* Invalid TSS */
-		case 11:
-			sigval = 11;
-			break;			/* Segment not present */
-		case 12:
-			sigval = 11;
-			break;			/* stack exception */
-		case 13:
-			sigval = 11;
-			break;			/* general protection */
-		case 14:
-			sigval = 11;
-			break;			/* page fault */
-		case 16:
-			sigval = 7;
-			break;			/* coprocessor error */
-		default:
-			sigval = 7;		/* "software generated" */
-		}
-	return(sigval);
-}
-
 /**********************************************/
 /* WHILE WE FIND NICE HEX CHARS, BUILD AN INT */
 /* RETURN NUMBER OF CHARS PROCESSED           */
@@ -288,15 +231,12 @@ int hexToInt(char **ptr, int *intValue)
 /*
  * This function does all command procesing for interfacing to gdb.
  */
-void handle_exception(int exceptionVector)
+void gdbserver_handle_exception(int sigval)
 {
-	int sigval, stepping;
+	int stepping;
 	int addr, length;
 	char *ptr;
 	int newPC;
-
-	/* reply to host that an exception has occurred */
-	sigval = computeSignal(exceptionVector);
 
 	ptr = remcomOutBuffer;
 
@@ -323,6 +263,14 @@ void handle_exception(int exceptionVector)
 	*ptr = '\0';
 
 	putpacket(remcomOutBuffer);
+
+	// in questi casi il programma deve terminare, quindi
+	// non aspettiamo un nuovo pacchetto
+	if(sigval == SIGILL || sigval == SIGTERM)
+	{
+		gdbserver_stop();
+		return;
+	}
 
 	while(true)
 	{
@@ -459,6 +407,7 @@ void handle_exception(int exceptionVector)
 #include <stdlib.h>
 #include <unistd.h>
 
+int server_socket;
 int connected_client_fd;
 
 int initialize_server_socket(const char * bind_addr, int port)
@@ -482,6 +431,12 @@ int initialize_server_socket(const char * bind_addr, int port)
 	}
 
 	return ret_sock;
+}
+
+void gdbserver_stop()
+{
+	close(connected_client_fd);
+	close(server_socket);
 }
 
 void putDebugChar(char c)
@@ -520,7 +475,7 @@ void gdbserver_set_register(amd64_regnum name, unsigned long value)
 
 bool gdbserver_start(const char* ip_addr, unsigned short port)
 {
-	int server_socket = initialize_server_socket(ip_addr, port);
+	server_socket = initialize_server_socket(ip_addr, port);
 	if(server_socket < 0)
 	{
 		logg << "gdbserver_start: creazione server_socket fallita, termino esecuzione." << endl;
@@ -537,7 +492,9 @@ bool gdbserver_start(const char* ip_addr, unsigned short port)
 
 	// va lanciato un breakpoint per notificare gdb
 	printf("gdbserver_start: lancio eccezione iniziale\n");
-	handle_exception(3);
+
+	// lanciamo SIGTRAP
+	gdbserver_handle_exception(SIGTRAP);
 
 	printf("gdbserver_start: termino\n");
 }

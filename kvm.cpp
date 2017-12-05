@@ -281,7 +281,7 @@ void kvm_handle_debug_exit(int vcpu_fd, kvm_debug_exit_arch dbg_arch)
 	gdbserver_set_register(AMD64_RIP_REGNUM, dbg_arch.pc);
 
 	// report to gdb a breakpoint exception (type 3)
-	handle_exception(3);
+	gdbserver_handle_exception(SIGTRAP);
 }
 
 
@@ -585,6 +585,8 @@ int main(int argc, char **argv)
 			case KVM_EXIT_SHUTDOWN:
 				logg << "kvm: TRIPLE FAULT. Shutting down" << endl;
 				//trace_user_program(vcpu_fd, kr);
+				if(debug_mode)
+					gdbserver_handle_exception(SIGTERM);
 				return 1;
 			case KVM_EXIT_DEBUG:
 				if(!debug_mode)
@@ -600,16 +602,20 @@ int main(int argc, char **argv)
 			case KVM_EXIT_FAIL_ENTRY:
 				logg << "kvm: KVM_EXIT_FAIL_ENTRY reason=" << std::dec << (unsigned long long)kr->fail_entry.hardware_entry_failure_reason << endl;
 				trace_user_program(vcpu_fd, kr);
+				if(debug_mode)
+					gdbserver_handle_exception(SIGILL);
 				return 1;
-				break;
 			case KVM_EXIT_INTERNAL_ERROR:
 				logg << "kvm: KVM_EXIT_INTERNAL_ERROR suberror=" << std::dec <<kr->internal.suberror << endl;
 				trace_user_program(vcpu_fd, kr);
+				if(debug_mode)
+					gdbserver_handle_exception(SIGILL);
 				return 1;
-				break;
 			default:
 				logg << "kvm: Unhandled VM_EXIT reason=" << std::dec << kr->exit_reason << endl;
 				trace_user_program(vcpu_fd, kr);
+				if(debug_mode)
+					gdbserver_handle_exception(SIGILL);
 				return 1;
 		}
 	}
