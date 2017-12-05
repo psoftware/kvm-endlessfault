@@ -13,10 +13,15 @@ void convert_to_network_order(void* msg)
 		case WELCOME_MESS:
 		case GENERIC_ERR:
 		case SERVER_QUIT:
-		case REQ_INFO:
 		case ACCPT_DUMP_MEM:
-			((simple_mess*)msg)->t = htonl(((req_dump_mem*)msg)->t);
-			((simple_mess*)msg)->timestamp = htonl(((simple_mess*)msg)->timestamp);
+		case REQ_INFO:
+			((simple_msg*)msg)->t = htonl(((req_dump_mem*)msg)->t);
+			((simple_msg*)msg)->timestamp = htonl(((simple_msg*)msg)->timestamp);
+			break;
+		case SEND_INFO:
+			((info_msg*)msg)->t = htonl(((info_msg*)msg)->t);
+			((info_msg*)msg)->timestamp = htonl(((simple_msg*)msg)->timestamp);
+			((info_msg*)msg)->mem_size = HTONLL(((info_msg*)msg)->mem_size);
 			break;
 		case REQ_DUMP_MEM:
 			((req_dump_mem*)msg)->t = htonl(((req_dump_mem*)msg)->t);
@@ -40,11 +45,14 @@ void convert_to_host_order(void* msg)
 		case WELCOME_MESS:
 		case GENERIC_ERR:
 		case SERVER_QUIT:
-		case REQ_INFO:
 		case ACCPT_DUMP_MEM:
-			((simple_mess*)msg)->timestamp = ntohl(((simple_mess*)msg)->timestamp);
+		case REQ_INFO:
+			((simple_msg*)msg)->timestamp = ntohl(((simple_msg*)msg)->timestamp);
 			break;
-		
+		case SEND_INFO:
+			((info_msg*)msg)->timestamp = ntohl(((simple_msg*)msg)->timestamp);
+			((info_msg*)msg)->mem_size = NTOHLL(((info_msg*)msg)->mem_size);
+			break;
 		case REQ_DUMP_MEM:
 			((req_dump_mem*)msg)->timestamp = ntohl(((req_dump_mem*)msg)->timestamp);
 			((req_dump_mem*)msg)->start_addr = NTOHLL(((req_dump_mem*)msg)->start_addr);
@@ -55,23 +63,23 @@ void convert_to_host_order(void* msg)
 	}
 }
 
-void init_req_dump_mem(req_dump_mem *mess, uint64_t start_addr, uint64_t end_addr)
+void init_req_dump_mem(req_dump_mem *msg, uint64_t start_addr, uint64_t end_addr)
 {
-	mess->t = REQ_DUMP_MEM;
-	mess->start_addr = start_addr;
-	mess->end_addr = end_addr;
-	mess->timestamp = time(NULL);
+	msg->t = REQ_DUMP_MEM;
+	msg->start_addr = start_addr;
+	msg->end_addr = end_addr;
+	msg->timestamp = time(NULL);
 }
 
-void init_simple_mess(simple_mess *mess, message_type t)
+void init_simple_msg(simple_msg *msg, message_type t)
 {
-	mess->t = t;
-	mess->timestamp = time(NULL);
+	msg->t = t;
+	msg->timestamp = time(NULL);
 }
 
-void init_send_info_mess(send_info *mess, uint64_t mem_size)
+void init_info_msg(info_msg *msg, uint64_t mem_size)
 {
-	mess->t = SEND_INFO;
-	mess->mem_size = mem_size;
-	mess->timestamp = time(NULL);
+	msg->t = SEND_INFO;
+	msg->mem_size = mem_size;
+	msg->timestamp = time(NULL);
 }

@@ -63,12 +63,17 @@ extern ConsoleLog& logg;
 extern uint8_t bootloader_code[];
 
 
-Bootloader::Bootloader(int vcpu_fd, unsigned char *guest_mem, uint64_t entry_point, uint64_t protected_mode_start_stack)
+
+//Bootloader::Bootloader(int vcpu_fd, unsigned char *guest_mem, uint64_t entry_point, uint64_t protected_mode_start_stack)
+Bootloader::Bootloader(int vcpu_fd, uint8_t *guest_mem, uint32_t guest_mem_size, uint64_t entry_point, uint64_t /*start_stack*/ protected_mode_start_stack)
 {
 	vcpu_fd_ = vcpu_fd;
 	guest_mem_ = guest_mem;
 	entry_point_ = entry_point;
+
 	protected_mode_start_stack_ = protected_mode_start_stack;
+	//start_stack_ = start_stack;
+	guest_mem_size_ = guest_mem_size;
 }	
 
 void Bootloader::fill_segment_descriptor(uint64_t *dt, struct kvm_segment *seg)
@@ -137,6 +142,10 @@ void Bootloader::setup_page_tables(kvm_sregs *sregs)
 	uint64_t pd_addr = 0x40000;
 	uint64_t *pd = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(guest_mem_) + pd_addr);
 
+	// every entry maps 2MiB
+	uint32_t n_entry_liv2 = guest_mem_size_ / (2*1024*1024); 
+
+
 	//tab liv 4
 	pml4[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | (pdpt_addr);
 
@@ -144,11 +153,16 @@ void Bootloader::setup_page_tables(kvm_sregs *sregs)
 	pdpt[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | (pd_addr);
 
 	//tab liv 2
-	for(uint16_t i_liv2=0; i_liv2<512; i_liv2++)
+	for(uint32_t i_liv2=0; i_liv2<512; i_liv2++)
 	{
-		// we are working with pages which address 2MiB using PS bit
-		pd[i_liv2] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS | ((((uint64_t)i_liv2)*1024*1024*2));
-		//logg << "pd[" << std::dec << i_liv2 << "]=" << std::hex << pd[i_liv2] << "\n";
+		if( i_liv2 < n_entry_liv2 || i_liv2==127 ) {
+			// we are working with pages which address 2MiB using PS bit
+			pd[i_liv2] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS | ((((uint64_t)i_liv2)*1024*1024*2));
+		} else {
+			// the page is not present
+			pd[i_liv2] = pd[i_liv2] & (~PDE64_PRESENT);
+		}
+		logg << "pd[" << std::dec << i_liv2 << "]=" << std::hex << pd[i_liv2] << std::endl;
 	}
 
 	sregs->cr3 = pml4_addr;

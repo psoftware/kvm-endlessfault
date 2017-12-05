@@ -225,12 +225,12 @@ void gdb_submit_registers(int vcpu_fd)
 	gdbserver_set_register(AMD64_R15_REGNUM, regs.r15);		/* %r15 */
 	gdbserver_set_register(AMD64_RIP_REGNUM, regs.rip);		/* %rip */
 	gdbserver_set_register(AMD64_EFLAGS_REGNUM, regs.rflags);		/* %eflags */
-	gdbserver_set_register(AMD64_CS_REGNUM, sregs.cs.base);		/* %cs */
-	gdbserver_set_register(AMD64_SS_REGNUM, sregs.ss.base);		/* %ss */
-	gdbserver_set_register(AMD64_DS_REGNUM, sregs.ds.base);		/* %ds */
-	gdbserver_set_register(AMD64_ES_REGNUM, sregs.es.base);		/* %es */
-	gdbserver_set_register(AMD64_FS_REGNUM, sregs.fs.base);		/* %fs */
-	gdbserver_set_register(AMD64_GS_REGNUM, sregs.gs.base);		/* %gs */
+	gdbserver_set_register(AMD64_CS_REGNUM, sregs.cs.selector);		/* %cs */
+	gdbserver_set_register(AMD64_SS_REGNUM, sregs.ss.selector);		/* %ss */
+	gdbserver_set_register(AMD64_DS_REGNUM, sregs.ds.selector);		/* %ds */
+	gdbserver_set_register(AMD64_ES_REGNUM, sregs.es.selector);		/* %es */
+	gdbserver_set_register(AMD64_FS_REGNUM, sregs.fs.selector);		/* %fs */
+	gdbserver_set_register(AMD64_GS_REGNUM, sregs.gs.selector);		/* %gs */
 }
 
 kvm_guest_debug guest_debug;
@@ -325,12 +325,13 @@ int main(int argc, char **argv)
 
     mem_size = reader.GetInteger("vm-spec", "memsize", 8);
     serv_port = reader.GetInteger("debug-server", "port", -1);
-    cout << "Config loaded from 'config.ini': server-port=" << serv_port <<" mem-size=" << mem_size << endl;
              
-    if( mem_size >= 8 && mem_size < 128 ){
+    if( mem_size >= 8 && mem_size < 1024 ){
+    		mem_size = ((mem_size & 1UL) == 0) ? mem_size : mem_size+1;
     	GUEST_PHYSICAL_MEMORY_SIZE = mem_size*1024*1024;
     }
- 	
+ 	logg << "GUEST_PHYSICAL_MEMORY_SIZE=" << GUEST_PHYSICAL_MEMORY_SIZE << endl;
+
  	guest_physical_memory = (unsigned char*)aligned_alloc(4096, GUEST_PHYSICAL_MEMORY_SIZE);
     if( guest_physical_memory == NULL )
     {
@@ -401,13 +402,6 @@ int main(int argc, char **argv)
 	// load elf file
 	uint64_t entry_point = estrai_segmento(elf_file_path, (void*)guest_physical_memory, GUEST_PHYSICAL_MEMORY_SIZE);
 
-	// start debug server
-	try {
-		DebugServer debugs(serv_port,GUEST_PHYSICAL_MEMORY_SIZE,guest_physical_memory);
-		debugs.start();
-	} catch( ... ) {
-		logg << "Not possible to open gdb server" << endl;
-	}
 	/* now we add a virtual cpu (vcpu) to our machine. We obtain yet
 	 * another open file descriptor, which we can use to
 	 * interact with the vcpu. Note that we can have several
@@ -418,6 +412,15 @@ int main(int argc, char **argv)
 		cout << "create vcpu: " << strerror(errno) << endl;
 		return 1;
 	}
+
+	// start debug server
+	try {
+		DebugServer debugs(serv_port,vcpu_fd,GUEST_PHYSICAL_MEMORY_SIZE,guest_physical_memory);
+		debugs.start();
+	} catch( ... ) {
+		logg << "Not possible to open gdb server" << endl;
+	}
+
 
 	/* the exchange of information between us and the vcpu is
 	 * via a 'kvm_run' data structure in shared memory, one
@@ -456,7 +459,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	Bootloader bootloader(vcpu_fd,guest_physical_memory,entry_point,0x400000L);
+	Bootloader bootloader(vcpu_fd,guest_physical_memory,GUEST_PHYSICAL_MEMORY_SIZE,entry_point,0x400000L);
 	bootloader.run_long_mode();
 
 	#ifdef DEBUG_LOG

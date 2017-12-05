@@ -1,8 +1,15 @@
 #include "gdbserver.h"
 
 #include <stdio.h>
+#include <iostream>
 #include <string.h>
 #include <linux/kvm.h>
+
+#include "../backend/ConsoleLog.h"
+
+using namespace std;
+
+extern ConsoleLog& logg;
 
 void putDebugChar(char);	/* write a single character      */
 char getDebugChar();	/* read and return a single char */
@@ -516,7 +523,7 @@ bool gdbserver_start(const char* ip_addr, unsigned short port)
 	int server_socket = initialize_server_socket(ip_addr, port);
 	if(server_socket < 0)
 	{
-		printf("gdbserver_start: creazione server_socket fallita\n");
+		logg << "gdbserver_start: creazione server_socket fallita" << endl;
 		exit(1);
 	}
 

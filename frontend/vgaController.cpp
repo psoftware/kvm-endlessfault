@@ -34,14 +34,17 @@ void VGAController:: write_reg_byte(io_addr addr, uint8_t val){
 				break;
 
 				default:
+					#ifdef DEBUG_LOG
 					logg<<"VGA : Register not valid"<<endl;
+					#endif
 			}
 
 		break;
 
 		default:
-
+			#ifdef DEBUG_LOG
 			logg<<"VGA : Address not valid"<<endl;
+			#endif
 
 	}
 
@@ -76,14 +79,17 @@ uint8_t VGAController::read_reg_byte(io_addr addr)
 				break;
 
 				default:
+					#ifdef DEBUG_LOG
 					logg<<"VGA : Register not valid"<<endl;
-			}
+					#endif
+			}		
 
 		break;
 
 		default:
+			#ifdef DEBUG_LOG
 			logg<<"VGA : Address not valid"<<endl;
-
+			#endif
 	}
 
 	pthread_mutex_unlock(&mutex);
