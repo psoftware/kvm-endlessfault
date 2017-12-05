@@ -240,6 +240,20 @@ void gdbserver_handle_exception(int sigval)
 
 	ptr = remcomOutBuffer;
 
+	// in questo caso va notificato al gdbclient che il programma è terminato.
+	// ne approfittiamo per terminare anche il server
+	if(sigval == SIGILL || sigval == SIGTERM)
+	{
+		*ptr++ = 'X';			/* notify gdb with signo, PC, FP and SP */
+		*ptr++ = hexchars[sigval >> 4];
+		*ptr++ = hexchars[sigval & 0xf];
+		*ptr = '\0';
+
+		putpacket(remcomOutBuffer);
+		gdbserver_stop();
+		return;
+	}
+
 	*ptr++ = 'T';			/* notify gdb with signo, PC, FP and SP */
 	*ptr++ = hexchars[sigval >> 4];
 	*ptr++ = hexchars[sigval & 0xf];
