@@ -33,16 +33,16 @@ void VGAController:: write_reg_byte(io_addr addr, uint8_t val){
 					CUR_LOW = DAT;	
 				break;
 
-				default:
 					#ifdef DEBUG_LOG
+				default:
 					logg<<"VGA : Register not valid"<<endl;
 					#endif
 			}
 
 		break;
 
-		default:
 			#ifdef DEBUG_LOG
+		default:
 			logg<<"VGA : Address not valid"<<endl;
 			#endif
 
@@ -78,16 +78,16 @@ uint8_t VGAController::read_reg_byte(io_addr addr)
 					result = DAT;	
 				break;
 
-				default:
 					#ifdef DEBUG_LOG
+				default:
 					logg<<"VGA : Register not valid"<<endl;
 					#endif
 			}		
 
 		break;
 
-		default:
 			#ifdef DEBUG_LOG
+		default:
 			logg<<"VGA : Address not valid"<<endl;
 			#endif
 	}
