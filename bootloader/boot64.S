@@ -7,7 +7,7 @@
 	 .globl  _start
 _start:
 	cli
-	//movl    $(stack + STACK_SIZE), %esp // inizializziamo lo stack
+	movl    $(stack + STACK_SIZE), %esp // inizializziamo lo stack
 
 	movl %cr4, %eax
 	orl $0x00000020, %eax  //cr4.pae
