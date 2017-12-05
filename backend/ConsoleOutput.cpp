@@ -42,7 +42,7 @@ bool ConsoleOutput::attachVGA(VGAController* v){
 
 bool ConsoleOutput::startThread() {
 
-	if(_videoThread != 0 || _cursorBlink != 0)
+	if(_videoThread != 0 || _cursorBlink != 0 || _vga == NULL)
 		return false;
 
 	_videoMatrix = _vga->getVMem();
