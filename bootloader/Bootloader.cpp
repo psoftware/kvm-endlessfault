@@ -62,8 +62,6 @@ extern ConsoleLog& logg;
 
 extern uint8_t bootloader_code[];
 
-
-
 Bootloader::Bootloader(int vcpu_fd, uint8_t *guest_mem, uint64_t guest_mem_size, uint64_t entry_point, uint64_t start_stack)
 {
 	vcpu_fd_ = vcpu_fd;
@@ -130,8 +128,10 @@ void Bootloader::setup_protected_mode(kvm_sregs *sregs)
 
 void Bootloader::setup_page_tables(kvm_sregs *sregs)
 {
-	// we map first 4GiB
-
+	/**
+	 * We map phisical memory into virtual memory.
+	 * First 1GiB is always mapped
+     */
 	uint64_t pml4_addr = 0x20000;
 	uint64_t *pml4 = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(guest_mem_) + pml4_addr);
 
@@ -141,33 +141,36 @@ void Bootloader::setup_page_tables(kvm_sregs *sregs)
 	uint64_t pd_addr = 0x40000;
 	uint64_t *pd = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(guest_mem_) + pd_addr);
 
-	// every entry maps 1GiB
-	uint32_t last_index_liv3 = guest_mem_size_ / (1 << 30) + 1;
-	// # entry on the last liv2 table
-	uint32_t n_entry_liv2 = (guest_mem_size_ % (1 << 30)) / (2 << 21); 
+	// every entry maps 1GiB. 
+	uint32_t last_index_lev3 = guest_mem_size_ / (1 << 30);
+	// # entry on the last lev2 table
+	uint32_t n_entry_lev2 = (guest_mem_size_ % (1 << 30)) / (1 << 21); 
 
 	uint64_t virt_addr;
 
+	logg<< "n_entry_liv2: " << n_entry_lev2 << std::endl;
 
-	//tab liv 4
+	//level 4 table
 	pml4[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | (pdpt_addr);
+	
 
-	for( uint32_t i_liv3=0; i_liv3<=last_index_liv3; i_liv3++)
+	for( uint32_t i_lev3=0; i_lev3<=last_index_lev3; i_lev3++)
 	{
-		pdpt[i_liv3] = PDE64_PRESENT | PDE64_RW | PDE64_USER | (pd_addr);
-		for(uint32_t i_liv2=0; i_liv2<512; i_liv2++)
+		pdpt[i_lev3] = PDE64_PRESENT | PDE64_RW | PDE64_USER | (pd_addr);
+		for(uint32_t i_lev2=0; i_lev2<512; i_lev2++)
 		{
-			// for the last entry in liv3 table we must map
-			// only the addressable phisical memory
-			if( i_liv3 != (last_index_liv3) || i_liv2<n_entry_liv2 ){
-				virt_addr = ((uint64_t)i_liv3 << 30) + (((uint64_t)i_liv2) << 21);
+			if( (i_lev3==0 && i_lev2==127)  // this page must be mapped otherwise it is thrown an exception when APIC is initialized
+				 || i_lev3 != (last_index_lev3)  // the last lev2 table must map only n_entry_liv2 others must map every entry
+				 || i_lev2<n_entry_lev2 )
+			{
+				virt_addr = ((uint64_t)i_lev3 << 30) + (((uint64_t)i_lev2) << 21);
 				// we set PS bit to address 2MiB pages
-				pd[i_liv2] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS | virt_addr;
+				pd[i_lev2] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS | virt_addr;
 			} else {
 				// the page is not present
-				pd[i_liv2] = pd[i_liv2] & (~PDE64_PRESENT);
+				pd[i_lev2] = pd[i_lev2] & (~PDE64_PRESENT);
 			}
-			//logg << "pd[" << std::dec << i_liv2 << "]=" << std::hex << pd[i_liv2] << std::endl;
+		//	logg << "pd[" << std::dec << i_lev2 << "]=" << std::hex << pd[i_lev2] << std::endl;
 		}
 		pd_addr += 0x10000;
 		pd = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(guest_mem_) + pd_addr);

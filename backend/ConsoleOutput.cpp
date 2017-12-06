@@ -105,10 +105,9 @@ void* ConsoleOutput::_mainThread(void *This_par)
 
 			   		pthread_mutex_unlock(&(This->_cursorMutex));
 
-			   	}else
+				}else
 
-			    	cout<<toPrint;
-		   
+				cout<<toPrint;
  			}
 
 			if(i != minRows -1)
