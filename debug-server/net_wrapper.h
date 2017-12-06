@@ -14,8 +14,6 @@
 #include <sys/types.h>
 #include "../backend/ConsoleLog.h"
 
-#define INIT_MY_BUFFER {NULL, 0L};
-
 typedef struct my_buffer_t
 {
 	char* buf;

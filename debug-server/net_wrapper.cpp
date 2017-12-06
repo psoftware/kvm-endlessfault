@@ -29,7 +29,9 @@ int open_serverTCP(uint16_t port)
 	}
 
 	inet_ntop(AF_INET, &my_addr.sin_addr, ip_str, 16);
+	#ifdef DEBUG_NET_WRAPPER
 	logg2 << "Server aperto. ip:" << ip_str << " porta:"<< port << endl;
+	#endif
 	ret = listen(sock, 10);
 	
 	if( ret == -1)
@@ -58,7 +60,6 @@ int accept_serverTCP(int sock_serv, ConnectionTCP *conn)
 	conn->socket = sd;
 
 	inet_ntop(AF_INET, ((char*)&conn->cl_addr.sin_addr), ip_str, 16);
-	logg2 << "nuovo peer connesso ip:"<< ip_str << " porta: "<< ntohs(conn->cl_addr.sin_port) << endl;
 	return sd;
 }
 

@@ -8,6 +8,12 @@
 #include "../backend/ConsoleLog.h"
 #include <sys/ioctl.h>
 #include <linux/kvm.h>
+
+/**
+ * Some useful information about 
+ * the virtual machine is runnig
+ *
+ */ 
 struct machine_info
 {
 	int vcpu_fd;
@@ -20,6 +26,10 @@ struct machine_info
 	}
 };
 
+/**
+ * This class implements a TCP server
+ * which provides debug services to clients.
+ */
 class DebugServer
 {
 	machine_info _mi;
@@ -27,14 +37,14 @@ class DebugServer
 	//std::vector<std::thread> peers_;
 	std::thread main_thread_;
 	void send_dump_mem(time_t timestamp, uint64_t start_addr, uint64_t end_addr);
-public: 
-	DebugServer(uint16_t port, int vcpu_fd, uint64_t mem_size, void *mem_ptr);
-	//static void _main_fun(int serv_sockt, std::vector<std::thread *> &peers, machine_info mi);
 	static void main_fun(int serv_sockt, machine_info mi);
 	static void worker_fun(int sockt, machine_info);
+public: 
+	DebugServer(uint16_t port, int vcpu_fd, uint64_t mem_size, void *mem_ptr);
+	~DebugServer();
+	void start();
 	static void send_dump_mem(int sockt, machine_info mi, uint64_t start_addr, uint64_t end_addr);
 	static void send_info(int sockt, machine_info mi);
-	void start();
 };
 
 #endif

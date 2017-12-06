@@ -64,15 +64,12 @@ extern uint8_t bootloader_code[];
 
 
 
-//Bootloader::Bootloader(int vcpu_fd, unsigned char *guest_mem, uint64_t entry_point, uint64_t protected_mode_start_stack)
-Bootloader::Bootloader(int vcpu_fd, uint8_t *guest_mem, uint32_t guest_mem_size, uint64_t entry_point, uint64_t /*start_stack*/ protected_mode_start_stack)
+Bootloader::Bootloader(int vcpu_fd, uint8_t *guest_mem, uint32_t guest_mem_size, uint64_t entry_point, uint64_t start_stack)
 {
 	vcpu_fd_ = vcpu_fd;
 	guest_mem_ = guest_mem;
 	entry_point_ = entry_point;
-
-	protected_mode_start_stack_ = protected_mode_start_stack;
-	//start_stack_ = start_stack;
+	start_stack_ = start_stack;
 	guest_mem_size_ = guest_mem_size;
 }	
 
@@ -201,7 +198,7 @@ int Bootloader::run_protected_mode()
 	// Clear all FLAGS bits, except bit 1 which is always set.
 	regs.rflags = 2;
 	regs.rip = entry_point_;
-	regs.rsp = protected_mode_start_stack_;
+	regs.rsp = start_stack_;
 	logg << "rip=" << std::hex <<(unsigned long) regs.rip << " rsp=" << (unsigned long)regs.rsp << std::endl;
 
 

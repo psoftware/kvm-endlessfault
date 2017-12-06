@@ -56,17 +56,18 @@ ConsoleLog& logg = *ConsoleLog::getInstance();
 keyboard keyb;
 
 // emulated serial port (frontend)
-serial_port* com1;
-serial_port* com2;
-serial_port* com3;
-serial_port* com4;
+serial_port* com1 = nullptr;
+serial_port* com2 = nullptr;
+serial_port* com3 = nullptr;
+serial_port* com4 = nullptr;
 
 // keyboard backend
 ConsoleInput* console_in;
 
 //text mode video memory emulation  
-ConsoleOutput* console_out;
+ConsoleOutput* console_out = nullptr;
 VGAController vga; // emulated vga controller
+DebugServer *debug_serv = nullptr;
 
 void endIO(int val)
 {
@@ -74,6 +75,8 @@ void endIO(int val)
 	console_out->resetConsole();
 	console_in->resetConsole();
 
+	if( debug_serv != nullptr )
+		delete debug_serv;
 	// close the program
 	exit(0);
 }
@@ -469,14 +472,15 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	// start debug server
-	try {
-		DebugServer debugs(serv_port,vcpu_fd,GUEST_PHYSICAL_MEMORY_SIZE,guest_physical_memory);
-		debugs.start();
-	} catch( ... ) {
-		logg << "Not possible to open gdb server" << endl;
+	// start debug server if enabled
+	if( reader.GetBoolean("debug-server", "enable", false) ) {
+		try {
+			debug_serv = new DebugServer(serv_port,vcpu_fd,GUEST_PHYSICAL_MEMORY_SIZE,guest_physical_memory);
+			debug_serv->start();
+		} catch( ... ) {
+			logg << "Not possible to open gdb server" << endl;
+		}
 	}
-
 
 	/* the exchange of information between us and the vcpu is
 	 * via a 'kvm_run' data structure in shared memory, one
