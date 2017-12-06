@@ -122,6 +122,22 @@ void fetch_application_result(int vcpu_fd, kvm_run *kr) {
 	logg << std::dec << "Program result (keycode): " << regs.rax << endl;
 }
 
+void trace_kvm_segment(const kvm_segment& seg)
+{
+	logg << "\tSREGS base: " << (unsigned int)seg.base << endl;
+	logg << "\tSREGS limit: " << (unsigned int)seg.limit << endl;
+	logg << "\tSREGS selector: " << (unsigned int)seg.selector << endl;
+	logg << "\tSREGS present: " << (unsigned int)seg.present << endl;
+	logg << "\tSREGS type: " << (unsigned int)seg.type << endl;
+	logg << "\tSREGS dpl: " << (unsigned int)seg.dpl << endl;
+	logg << "\tSREGS db: " << (unsigned int)seg.db << endl;
+	logg << "\tSREGS s: " << (unsigned int)seg.s << endl;
+	logg << "\tSREGS l: " << (unsigned int)seg.l << endl;
+	logg << "\tSREGS g: " << (unsigned int)seg.g << endl;
+	logg << "\tSREGS type: " << (unsigned int)seg.type << endl;
+	logg << "\tSREGS selector: " << (unsigned int)seg.selector << endl;
+}
+
 void trace_user_program(int vcpu_fd, kvm_run *kr) {
 	kvm_regs regs;
 	if (ioctl(vcpu_fd, KVM_GET_REGS, &regs) < 0) {
@@ -144,23 +160,23 @@ void trace_user_program(int vcpu_fd, kvm_run *kr) {
 	logg << "\tCR0: " << (void *)sregs.cr0 << endl;
 	logg << "\tEFER: " << (void *)sregs.efer << endl;
 
-	logg << "\tSREGS base: " << (unsigned int)sregs.ds.base << endl;
-	logg << "\tSREGS limit: " << (unsigned int)sregs.ds.limit << endl;
-	logg << "\tSREGS selector: " << (unsigned int)sregs.ds.selector << endl;
-	logg << "\tSREGS present: " << (unsigned int)sregs.ds.present << endl;
-	logg << "\tSREGS type: " << (unsigned int)sregs.ds.type << endl;
-	logg << "\tSREGS dpl: " << (unsigned int)sregs.ds.dpl << endl;
-	logg << "\tSREGS db: " << (unsigned int)sregs.ds.db << endl;
-	logg << "\tSREGS s: " << (unsigned int)sregs.ds.s << endl;
-	logg << "\tSREGS l: " << (unsigned int)sregs.ds.l << endl;
-	logg << "\tSREGS g: " << (unsigned int)sregs.ds.g << endl;
-	logg << "\tSREGS type: " << (unsigned int)sregs.ds.type << endl;
-	logg << "\tSREGS selector: " << (unsigned int)sregs.ds.selector << endl;
-
 	logg << "\tIDT base: " << (void *)sregs.idt.base << endl;
 	logg << "\tIDT limit: " << (unsigned int)sregs.idt.limit << endl;
 	logg << "\tGDT base: " << (void *)sregs.gdt.base << endl;
 	logg << "\tGDT limit: " << (unsigned int)sregs.gdt.limit << endl;
+
+	logg << "Segment CS:\n";
+	trace_kvm_segment(sregs.cs);
+	logg << "Segment DS:\n";
+	trace_kvm_segment(sregs.ds);
+	logg << "Segment ES:\n";
+	trace_kvm_segment(sregs.es);
+	logg << "Segment FS:\n";
+	trace_kvm_segment(sregs.fs);
+	logg << "Segment GS:\n";
+	trace_kvm_segment(sregs.gs);
+	logg << "Segment SS:\n";
+	trace_kvm_segment(sregs.ss);
 
 	kvm_vcpu_events events;
 	if (ioctl(vcpu_fd, KVM_GET_VCPU_EVENTS, &events) < 0) {
