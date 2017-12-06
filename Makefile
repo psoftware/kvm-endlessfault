@@ -1,6 +1,6 @@
 COMM_CFLAGS=-std=gnu++14 -g
 LD_FLAGS=-pthread
-ELFPROG_CFLAGS=-nostdlib -Ttext=0x200000 -fno-asynchronous-unwind-tables -m64 -Wl,--build-id=none -no-pie -Wl,-fuse-ld=gold
+ELFPROG_CFLAGS=-nostdlib -Ttext=0x200000 -fno-asynchronous-unwind-tables -m64 -Wl,--build-id=none -no-pie -Wl,-fuse-ld=gold -g
 
 FRONTEND_CPP_FILES := $(wildcard frontend/*.cpp)
 FRONTEND_OBJ_FILES = $(patsubst frontend/%.cpp,frontend/%.o,$(FRONTEND_CPP_FILES))
