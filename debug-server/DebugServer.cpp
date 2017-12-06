@@ -45,7 +45,9 @@ void DebugServer::worker_fun(int sockt, machine_info mi)
 
 	while( true ){
 		if( !recv_data(sockt, &my_buf) ){
+			#ifdef DEBUG_LOG
 			logg << "client disconnected" << endl;
+			#endif
 			return;
 		}
 		convert_to_host_order(my_buf.buf);
