@@ -56,6 +56,7 @@ enum amd64_regnum
 
 
 void gdbserver_handle_exception(int sigval);
+unsigned long gdbserver_get_register(amd64_regnum name);
 void gdbserver_set_register(amd64_regnum name, unsigned long value);
 bool gdbserver_start(const char* ip_addr, unsigned short port);
 void gdbserver_stop();

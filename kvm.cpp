@@ -236,6 +236,39 @@ void gdb_submit_registers(int vcpu_fd)
 kvm_guest_debug guest_debug;
 int debug_vcpu_id;
 
+void kvm_load_registers_from_gdbcache()
+{
+	kvm_regs regs;
+	if (ioctl(debug_vcpu_id, KVM_GET_REGS, &regs) < 0) {
+		logg << "trace_user_program KVM_GET_REGS error: " << strerror(errno) << endl;
+		return;
+	}
+
+	regs.rax = gdbserver_get_register(AMD64_RAX_REGNUM);		/* %rax */
+	regs.rbx = gdbserver_get_register(AMD64_RBX_REGNUM);		/* %rbx */
+	regs.rcx = gdbserver_get_register(AMD64_RCX_REGNUM);		/* %rcx */
+	regs.rdx = gdbserver_get_register(AMD64_RDX_REGNUM);		/* %rdx */
+	regs.rsi = gdbserver_get_register(AMD64_RSI_REGNUM);		/* %rsi */
+	regs.rdi = gdbserver_get_register(AMD64_RDI_REGNUM);		/* %rdi */
+	regs.rbp = gdbserver_get_register(AMD64_RBP_REGNUM);		/* %rbp */
+	regs.rsp = gdbserver_get_register(AMD64_RSP_REGNUM);		/* %rsp */
+	regs.r8 = gdbserver_get_register(AMD64_R8_REGNUM);		/* %r8 */
+	regs.r9 = gdbserver_get_register(AMD64_R9_REGNUM);		/* %r9 */
+	regs.r10 = gdbserver_get_register(AMD64_R10_REGNUM);		/* %r10 */
+	regs.r11 = gdbserver_get_register(AMD64_R11_REGNUM);		/* %r11 */
+	regs.r12 = gdbserver_get_register(AMD64_R12_REGNUM);		/* %r12 */
+	regs.r13 = gdbserver_get_register(AMD64_R13_REGNUM);		/* %r13 */
+	regs.r14 = gdbserver_get_register(AMD64_R14_REGNUM);		/* %r14 */
+	regs.r15 = gdbserver_get_register(AMD64_R15_REGNUM);		/* %r15 */
+	regs.rip = gdbserver_get_register(AMD64_RIP_REGNUM);		/* %rip */
+	regs.rflags = gdbserver_get_register(AMD64_EFLAGS_REGNUM);		/* %eflags */
+
+	if (ioctl(debug_vcpu_id, KVM_SET_REGS, &regs) < 0) {
+		logg << "kvm_load_registers_from_gdbcache KVM_SET_REGS error: " << strerror(errno) << endl;
+		return;
+	}
+}
+
 void kvm_debug_set_step(bool enable_step)
 {
 	if(enable_step)
