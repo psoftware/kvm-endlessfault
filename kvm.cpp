@@ -386,7 +386,10 @@ int main(int argc, char **argv)
 		mem_size = ((mem_size & 1UL) == 0) ? mem_size : mem_size+1;
 		GUEST_PHYSICAL_MEMORY_SIZE = mem_size*1024*1024;
 	}
- 	logg << "GUEST_PHYSICAL_MEMORY_SIZE=" << GUEST_PHYSICAL_MEMORY_SIZE << endl;
+
+	#ifdef DEBUG_LOG
+	logg << "GUEST_PHYSICAL_MEMORY_SIZE = " << GUEST_PHYSICAL_MEMORY_SIZE << endl;
+	#endif
 
  	guest_physical_memory = (unsigned char*)aligned_alloc(4096, GUEST_PHYSICAL_MEMORY_SIZE);
 	if( guest_physical_memory == NULL )
