@@ -128,10 +128,6 @@ void Bootloader::setup_protected_mode(kvm_sregs *sregs)
 
 void Bootloader::setup_page_tables(kvm_sregs *sregs)
 {
-	/**
-	 * We map phisical memory into virtual memory.
-	 * First 1GiB is always mapped
-     */
 	uint64_t pml4_addr = 0x20000;
 	uint64_t *pml4 = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(guest_mem_) + pml4_addr);
 
@@ -147,8 +143,6 @@ void Bootloader::setup_page_tables(kvm_sregs *sregs)
 	uint32_t n_entry_lev2 = (guest_mem_size_ % (1 << 30)) / (1 << 21); 
 
 	uint64_t virt_addr;
-
-	logg<< "n_entry_liv2: " << n_entry_lev2 << std::endl;
 
 	//level 4 table
 	pml4[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | (pdpt_addr);
