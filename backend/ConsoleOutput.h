@@ -30,8 +30,8 @@
 
 using namespace std;
 
-class ConsoleOutput{
-
+class ConsoleOutput
+{
 private:
 
 	pthread_t _videoThread;

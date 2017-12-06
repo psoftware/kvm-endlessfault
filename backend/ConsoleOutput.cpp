@@ -1,11 +1,10 @@
 #include "ConsoleOutput.h"
 
-ConsoleOutput::ConsoleOutput(){
-
+ConsoleOutput::ConsoleOutput()
+{
 	tcgetattr(STDOUT_FILENO, &tty_attr_old);
 	pthread_mutex_init(&_cursorMutex, NULL);
-	_isBlinking = true;
-	
+	_isBlinking = true;	
 }
 
 ConsoleOutput::~ConsoleOutput()
@@ -17,7 +16,6 @@ ConsoleOutput::~ConsoleOutput()
 void ConsoleOutput::resetConsole()
 {
 	tcsetattr(STDOUT_FILENO, TCSAFLUSH, &tty_attr_old);
-
 	cout<<RESET_CONSOLE;
 }
 
@@ -30,7 +28,8 @@ ConsoleOutput* ConsoleOutput::getInstance()
 
 
 
-bool ConsoleOutput::attachVGA(VGAController* v){
+bool ConsoleOutput::attachVGA(VGAController* v)
+{
 
 	if(_vga != NULL)
 		return false;
@@ -40,8 +39,8 @@ bool ConsoleOutput::attachVGA(VGAController* v){
 }
 
 
-bool ConsoleOutput::startThread() {
-
+bool ConsoleOutput::startThread()
+{
 	if(_videoThread != 0 || _cursorBlink != 0 || _vga == NULL)
 		return false;
 
@@ -50,41 +49,38 @@ bool ConsoleOutput::startThread() {
 	pthread_create(&_videoThread, NULL, ConsoleOutput::_mainThread, this);
 
 	pthread_create(&_cursorBlink, NULL, ConsoleOutput::_blinkThread, this);
-
 }
 
-void* ConsoleOutput::_mainThread(void *This_par){
-
+void* ConsoleOutput::_mainThread(void *This_par)
+{
 	ConsoleOutput* This = (ConsoleOutput*)This_par;
 
 	cout<<HIDE_CURSOR;
 	cout<<CLEAR;
 
-
 	while(true){
 
 		cout<<CURSOR_START;
 		winsize ws;
-        ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
+		ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
 
-        uint16_t curr_rows = ws.ws_row;
-        uint16_t curr_cols = ws.ws_col;
-        uint16_t minRows = This->_min(ROWS, curr_rows);
-        uint16_t minCols = This->_min(COLS, curr_cols);
+		uint16_t curr_rows = ws.ws_row;
+		uint16_t curr_cols = ws.ws_col;
+		uint16_t minRows = This->_min(ROWS, curr_rows);
+		uint16_t minCols = This->_min(COLS, curr_cols);
 
 
-        uint16_t cursorIndex = This->_vga->cursorPosition();
-
+		uint16_t cursorIndex = This->_vga->cursorPosition();
 		uint16_t cursorX = cursorIndex % COLS;
 		uint16_t cursorY = floor( cursorIndex / COLS );
 
-        for (int i = 0; i < minRows ; i++) {
+		for (int i = 0; i < minRows ; i++) {
 			for(int j = 0; j< minCols; j++){
 
-			    uint16_t temp = This->_videoMatrix[i*COLS + j];
-			    char c = (char)temp;
-			    char textC =(char) ( (temp>>8) & 0x000f);
-			    char backg = (char) ((temp & 0x7000)>>12);
+		    	uint16_t temp = This->_videoMatrix[i*COLS + j];
+				char c = (char)temp;
+		    	char textC =(char) ( (temp>>8) & 0x000f);
+		    	char backg = (char) ((temp & 0x7000)>>12);
 		 		char blinkC = (char) ( (temp & 0x8000)>>15);
 
 			    string toPrint = "\033[" + This->_getTextColor((uint32_t)textC) + ';' + This->_getBackgroundColor((uint32_t)backg) + 'm';
@@ -103,11 +99,8 @@ void* ConsoleOutput::_mainThread(void *This_par){
 			   		pthread_mutex_lock(&(This->_cursorMutex));
 
 			   		if(This->_isBlinking)
-
 			   			cout<<UNDERLINED<<toPrint<<RESTORE;
-
 			   		else
-
 			   			cout<<toPrint;
 
 			   		pthread_mutex_unlock(&(This->_cursorMutex));
@@ -119,25 +112,19 @@ void* ConsoleOutput::_mainThread(void *This_par){
  			}
 
 			if(i != minRows -1)
-
 				cout<<STANDARD_BACKGROUND<<endl;
-			
 			else{
-
 				cout<<STANDARD_BACKGROUND;
 				fflush(stdout);
 			}
         }
 		usleep(REFRESH_TIME);
-
 	}
-
-
 }
 
 
-void* ConsoleOutput::_blinkThread(void *param){
-
+void* ConsoleOutput::_blinkThread(void *param)
+{
 	ConsoleOutput* This = (ConsoleOutput*)param;
 
 	while(true){
@@ -150,12 +137,11 @@ void* ConsoleOutput::_blinkThread(void *param){
 
 		usleep(BLINK_TIME);
 	}
-
 }
 
 
-ConsoleOutput::colorTable ConsoleOutput::color_t{
-
+ConsoleOutput::colorTable ConsoleOutput::color_t
+{
 		{ //supportedTextColor
 
 			"30", "34", "32", "36", 
@@ -175,8 +161,8 @@ ConsoleOutput::colorTable ConsoleOutput::color_t{
 
 };
 
-string ConsoleOutput::_getTextColor(uint32_t code){
-
+string ConsoleOutput::_getTextColor(uint32_t code)
+{
 	if(code >= color_t.TEXT_SIZE)
 		return color_t.supportedTextColor[0];
 
@@ -184,13 +170,12 @@ string ConsoleOutput::_getTextColor(uint32_t code){
 }
 
 
-string ConsoleOutput::_getBackgroundColor(uint32_t code){
-
+string ConsoleOutput::_getBackgroundColor(uint32_t code)
+{
 	if(code >= color_t.BACKGROUND_SIZE)
 		return color_t.supportedBackgroundColor[0];
 	
 	return color_t.supportedBackgroundColor[code];
-
 }
 
 
