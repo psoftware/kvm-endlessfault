@@ -308,6 +308,8 @@ void gdbserver_handle_exception(int sigval)
 				break;
 			case 'G':		/* set the value of the CPU registers - return OK */
 				hex2mem(ptr,(char *) registers, NUMREGBYTES);
+				// request kvm to reload all registers from the gdbcache
+				kvm_load_registers_from_gdbcache();
 				strcpy(remcomOutBuffer, "OK");
 				break;
 			case 'p':		/* get the value of a single CPU register */
