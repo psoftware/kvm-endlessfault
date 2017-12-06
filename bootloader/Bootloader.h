@@ -14,7 +14,7 @@ class Bootloader {
 private:
 	int vcpu_fd_;
 	unsigned char *guest_mem_;
-	uint32_t guest_mem_size_;
+	uint64_t guest_mem_size_;
 	uint64_t entry_point_;
 	// Used just in protected mode. In long mode extern bootloader sets its own stack
 	uint64_t start_stack_;
@@ -22,7 +22,7 @@ private:
 	void setup_protected_mode(struct kvm_sregs *sregs);
 	void setup_page_tables(kvm_sregs *sregs);
 public:
-	Bootloader(int vcpu_fd, uint8_t *guest_mem, uint32_t guest_mem_size, uint64_t entry_point, uint64_t start_stack);
+	Bootloader(int vcpu_fd, uint8_t *guest_mem, uint64_t guest_mem_size, uint64_t entry_point, uint64_t start_stack);
 	int run_long_mode();
 	int run_protected_mode();
 };

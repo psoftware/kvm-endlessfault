@@ -64,7 +64,7 @@ extern uint8_t bootloader_code[];
 
 
 
-Bootloader::Bootloader(int vcpu_fd, uint8_t *guest_mem, uint32_t guest_mem_size, uint64_t entry_point, uint64_t start_stack)
+Bootloader::Bootloader(int vcpu_fd, uint8_t *guest_mem, uint64_t guest_mem_size, uint64_t entry_point, uint64_t start_stack)
 {
 	vcpu_fd_ = vcpu_fd;
 	guest_mem_ = guest_mem;
@@ -130,6 +130,8 @@ void Bootloader::setup_protected_mode(kvm_sregs *sregs)
 
 void Bootloader::setup_page_tables(kvm_sregs *sregs)
 {
+	// we map first 4GiB
+
 	uint64_t pml4_addr = 0x20000;
 	uint64_t *pml4 = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(guest_mem_) + pml4_addr);
 
@@ -139,27 +141,36 @@ void Bootloader::setup_page_tables(kvm_sregs *sregs)
 	uint64_t pd_addr = 0x40000;
 	uint64_t *pd = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(guest_mem_) + pd_addr);
 
-	// every entry maps 2MiB
-	uint32_t n_entry_liv2 = guest_mem_size_ / (2*1024*1024); 
+	// every entry maps 1GiB
+	uint32_t last_index_liv3 = guest_mem_size_ / (1 << 30) + 1;
+	// # entry on the last liv2 table
+	uint32_t n_entry_liv2 = (guest_mem_size_ % (1 << 30)) / (2 << 21); 
+
+	uint64_t virt_addr;
 
 
 	//tab liv 4
 	pml4[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | (pdpt_addr);
 
-	//tab liv 3
-	pdpt[0] = PDE64_PRESENT | PDE64_RW | PDE64_USER | (pd_addr);
-
-	//tab liv 2
-	for(uint32_t i_liv2=0; i_liv2<512; i_liv2++)
+	for( uint32_t i_liv3=0; i_liv3<=last_index_liv3; i_liv3++)
 	{
-		if( i_liv2 < n_entry_liv2 || i_liv2==127 ) {
-			// we are working with pages which address 2MiB using PS bit
-			pd[i_liv2] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS | ((((uint64_t)i_liv2)*1024*1024*2));
-		} else {
-			// the page is not present
-			pd[i_liv2] = pd[i_liv2] & (~PDE64_PRESENT);
+		pdpt[i_liv3] = PDE64_PRESENT | PDE64_RW | PDE64_USER | (pd_addr);
+		for(uint32_t i_liv2=0; i_liv2<512; i_liv2++)
+		{
+			// for the last entry in liv3 table we must map
+			// only the addressable phisical memory
+			if( i_liv3 != (last_index_liv3) || i_liv2<n_entry_liv2 ){
+				virt_addr = ((uint64_t)i_liv3 << 30) + (((uint64_t)i_liv2) << 21);
+				// we set PS bit to address 2MiB pages
+				pd[i_liv2] = PDE64_PRESENT | PDE64_RW | PDE64_USER | PDE64_PS | virt_addr;
+			} else {
+				// the page is not present
+				pd[i_liv2] = pd[i_liv2] & (~PDE64_PRESENT);
+			}
+			//logg << "pd[" << std::dec << i_liv2 << "]=" << std::hex << pd[i_liv2] << std::endl;
 		}
-		//logg << "pd[" << std::dec << i_liv2 << "]=" << std::hex << pd[i_liv2] << std::endl;
+		pd_addr += 0x10000;
+		pd = reinterpret_cast<uint64_t *>(reinterpret_cast<uint64_t>(guest_mem_) + pd_addr);
 	}
 
 	sregs->cr3 = pml4_addr;
