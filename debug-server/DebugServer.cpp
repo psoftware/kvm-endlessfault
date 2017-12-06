@@ -13,7 +13,9 @@ DebugServer::DebugServer(uint16_t port, int vcpu_fd, uint64_t mem_size, void *me
 
 DebugServer::~DebugServer()
 {
-	logg << "chiamato distruttore" << endl;
+	#ifdef DEBUG_LOG
+	logg << "DebugServer killed" << endl;
+	#endif
 	main_thread_.~thread();
 	close(serv_socket_);
 }
