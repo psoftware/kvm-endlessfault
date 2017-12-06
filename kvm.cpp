@@ -562,6 +562,8 @@ int main(int argc, char **argv)
 		{
 			case KVM_EXIT_HLT:
 				fetch_application_result(vcpu_fd, kr);
+				if(debug_mode)
+					gdbserver_handle_exception(SIGTERM);
 				return 1;
 			case KVM_EXIT_IO:
 			{
