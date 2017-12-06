@@ -231,6 +231,13 @@ void gdb_submit_registers(int vcpu_fd)
 	gdbserver_set_register(AMD64_ES_REGNUM, sregs.es.selector);		/* %es */
 	gdbserver_set_register(AMD64_FS_REGNUM, sregs.fs.selector);		/* %fs */
 	gdbserver_set_register(AMD64_GS_REGNUM, sregs.gs.selector);		/* %gs */
+
+	// extra registers
+	gdbserver_set_custom_register(AMD64_CR4_REGNUM, sregs.cr4);		/* %cr4 */
+	gdbserver_set_custom_register(AMD64_CR3_REGNUM, sregs.cr3);		/* %cr3 */
+	gdbserver_set_custom_register(AMD64_CR2_REGNUM, sregs.cr2);		/* %cr2 */
+	gdbserver_set_custom_register(AMD64_CR0_REGNUM, sregs.cr0);		/* %cr0 */
+	gdbserver_set_custom_register(AMD64_EFER_REGNUM, sregs.efer);		/* %efer */
 }
 
 kvm_guest_debug guest_debug;

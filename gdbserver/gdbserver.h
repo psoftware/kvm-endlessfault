@@ -54,10 +54,19 @@ enum amd64_regnum
   AMD64_GSBASE_REGNUM
 };
 
+enum amd64_extendend_regnum
+{
+  AMD64_CR4_REGNUM,
+  AMD64_CR3_REGNUM,
+  AMD64_CR2_REGNUM,
+  AMD64_CR0_REGNUM,
+  AMD64_EFER_REGNUM
+};
 
 void gdbserver_handle_exception(int sigval);
 unsigned long gdbserver_get_register(amd64_regnum name);
 void gdbserver_set_register(amd64_regnum name, unsigned long value);
+void gdbserver_set_custom_register(amd64_extendend_regnum name, unsigned long value);
 bool gdbserver_start(const char* ip_addr, unsigned short port);
 void gdbserver_stop();
 

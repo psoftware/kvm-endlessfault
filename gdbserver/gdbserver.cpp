@@ -41,6 +41,13 @@ static const char hexchars[]="0123456789abcdef";
  */
 long registers[NUMREGS];
 
+// this registers cannot be send using standard read register commands
+// so we keep them separated from others
+#define NUM_EXTENDEDREGS 5
+
+long extended_registers[NUM_EXTENDEDREGS];
+
+
 #define STACKSIZE 10000
 int remcomStack[STACKSIZE/sizeof(int)];
 static int* stackPtr = &remcomStack[STACKSIZE/sizeof(int) - 1];
@@ -292,6 +299,28 @@ void gdbserver_handle_exception(int sigval)
 		remcomOutBuffer[0] = '\0';
 		ptr = getpacket();
 
+		// === Advanced commands
+		if(!strncmp(ptr, "qRcmd,", strlen("qRcmd,")))
+		{
+			// sent command parameter must be estracted and decoded
+			char command_str[5];
+			hex2mem(ptr + strlen("qRcmd,"), command_str, 4);
+			command_str[4] = '\0';
+
+			// extra register display command
+			if(!strcmp(command_str, "regs"))
+			{
+				char response[200];
+				snprintf(response, 200, "Privileged Registers (Custom command):\nCR4 0x%016lx\nCR3 0x%016lx\nCR2 0x%016lx\nCR0 0x%016lx\nEFER 0x%016lx\n",
+					extended_registers[AMD64_CR4_REGNUM], extended_registers[AMD64_CR3_REGNUM], extended_registers[AMD64_CR2_REGNUM],
+					extended_registers[AMD64_CR0_REGNUM], extended_registers[AMD64_EFER_REGNUM]);
+
+				// the result must be encoded in hex format (using char as output)
+				mem2hex(response, remcomOutBuffer, strlen(response));
+			}
+		}
+		// === Standard commands
+		else
 		switch(*ptr++)
 		{
 			case '?':
@@ -494,6 +523,11 @@ unsigned long gdbserver_get_register(amd64_regnum name)
 void gdbserver_set_register(amd64_regnum name, unsigned long value)
 {
 	registers[name] = value;
+}
+
+void gdbserver_set_custom_register(amd64_extendend_regnum name, unsigned long value)
+{
+	extended_registers[name] = value;
 }
 
 bool gdbserver_start(const char* ip_addr, unsigned short port)
