@@ -347,7 +347,6 @@ void kvm_handle_debug_exit(int vcpu_fd, kvm_debug_exit_arch dbg_arch)
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 int main(int argc, char **argv)
 {
-
 	uint32_t mem_size;
 	uint16_t serv_port;
 
@@ -356,7 +355,6 @@ int main(int argc, char **argv)
 		cout << "Format not correct. Use: kvm <elf file> [-logfile filefifo]" << endl;
 		return 1;
 	}
-
 
 	// if a specified file to log into
 	if(argc == 4 && !strcmp(argv[2], "-logfile"))
@@ -376,28 +374,27 @@ int main(int argc, char **argv)
 	// load configuration file
 	INIReader reader("config.ini");
 
-    if (reader.ParseError() < 0) {
-        cout << "Can't load 'config.ini'\n";
-        return 2;
-    }
+	if (reader.ParseError() < 0) {
+		cout << "Can't load 'config.ini'\n";
+		return 2;
+	}
 
-
-    mem_size = reader.GetInteger("vm-spec", "memsize", 8);
-    serv_port = reader.GetInteger("debug-server", "port", -1);
+	mem_size = reader.GetInteger("vm-spec", "memsize", 8);
+	serv_port = reader.GetInteger("debug-server", "port", -1);
              
-    if( mem_size >= 8 && mem_size < 1024 ){
-    		mem_size = ((mem_size & 1UL) == 0) ? mem_size : mem_size+1;
-    	GUEST_PHYSICAL_MEMORY_SIZE = mem_size*1024*1024;
-    }
+	if( mem_size >= 8 && mem_size < 1024 ){
+		mem_size = ((mem_size & 1UL) == 0) ? mem_size : mem_size+1;
+		GUEST_PHYSICAL_MEMORY_SIZE = mem_size*1024*1024;
+	}
  	logg << "GUEST_PHYSICAL_MEMORY_SIZE=" << GUEST_PHYSICAL_MEMORY_SIZE << endl;
 
  	guest_physical_memory = (unsigned char*)aligned_alloc(4096, GUEST_PHYSICAL_MEMORY_SIZE);
-    if( guest_physical_memory == NULL )
-    {
-    	cout << "Cannot allocate guest_physical_memory" << endl;
-    	return 3;
-    }
-    
+	if( guest_physical_memory == NULL )
+	{
+		cout << "Cannot allocate guest_physical_memory" << endl;
+		return 3;
+	}
+
     ////////////////////
 	/* the first thing to do is to open the /dev/kvm pseudo-device,
 	 * obtaining a file descriptor.
