@@ -13,7 +13,6 @@ void convert_to_network_order(void* msg)
 		case WELCOME_MESS:
 		case GENERIC_ERR:
 		case SERVER_QUIT:
-		case ACCPT_DUMP_MEM:
 		case REQ_INFO:
 			((simple_msg*)msg)->t = htonl(((req_dump_mem*)msg)->t);
 			((simple_msg*)msg)->timestamp = htonl(((simple_msg*)msg)->timestamp);
@@ -45,7 +44,6 @@ void convert_to_host_order(void* msg)
 		case WELCOME_MESS:
 		case GENERIC_ERR:
 		case SERVER_QUIT:
-		case ACCPT_DUMP_MEM:
 		case REQ_INFO:
 			((simple_msg*)msg)->timestamp = ntohl(((simple_msg*)msg)->timestamp);
 			break;

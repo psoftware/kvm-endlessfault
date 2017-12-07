@@ -9,7 +9,6 @@ typedef enum
 	REQ_INFO,
 	SEND_INFO,
 	REQ_DUMP_MEM,
-	ACCPT_DUMP_MEM,
 	SERVER_QUIT,
 } message_type;
 
