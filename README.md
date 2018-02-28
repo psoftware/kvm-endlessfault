@@ -3,26 +3,56 @@
 ### Compilazione ###
 `make`
 
-kvm.cpp e tutti i file cpp contenuti in frontend, backend, elf, debug-server e gdbserver saranno compilati e linkati per generare l'eseguibile kvm.
+kvm.cpp and every other cpp file in frontend, backend, elf, debug-server and gdbserver folders will be compiled to generate the kvm executable file.
+Example sources of target/ folder will be compiled but not linked to kvm.
 
-### Avvio ###
-L'avvio può essere compiuto nella console dalla quale si digita il comando usando
-`./kvm patheseguibile`
+### Starting ###
+The emulator needs an elf to execute. The executable runs directly in long paged mode.
+`./kvm elfpath`
+Log output goes automatically into console.log file.
 
-oppure (CONSIGLIATO) si può usare
-`./run patheseguibile`
-che apre una nuova console e stampa l'output di log sulla console iniziale.
+You can start the emulator in a new (xterm) console using
+`./run elfpath`
+The main console will be used as a log output.
+
+Elf examples can be found in the build/ directory after building with make.
+There are also some precompiled and more complex examples in esempi-io/ folder
+
+### Parameters ####
+./kvm -logfile file -> to set the log file path
+
+Other parameters can be set into the main folder .ini file.
+
+### IO Emulation ###
+Actually there are only a few emulated devices: video card (text-mode only), keyboard and serial ports. The emulation is very basic.
 
 ### GDB Server ###
-E' possibile sfruttare gdb per debuggare il programma avviato sulla Virtual Machine.
-Innanzitutto va abilitato il server nel file config.ini, nella sezione gdb-server, e, dopo aver avviato il Virtual Machine Monitor (usando run o kvm) va avviato il client gdb.
-Nella console del debugger è necessario inserire i seguenti comandi:
+This supervisor includes an almost complete implementation of a gdbstub.
+You can debug the program running on the VM using a gdb client and all the common commands like step, next, continue, memory commands and many others.
+The server must be enabled using the config.ini file.
+It's possible to attach a gdb client to a running supervisor instance using this set of commands:
 `set architecture i386:x86-64`
-`file patheseguibile`
-`target remote 127.0.0.1:1234`
+`file elfpath`
+`target remote address:port`
 
-Se tutto è andato a buon fine sarà possibile digitare i normali comandi per le operazioni di debug (breakpoint, continue, step, next...).
-
-Inoltre è disponibile il comando aggiuntivo (custom)
+You can also use this custom gdb command
 `monitor regs`
-che permette di stampare il contenuto dei registri privilegiati (CR4, CR3, CR2, CR0, EFER).
+to get the content of some low level registers (not listed with the standard register command) like CR4, CR3, CR2, CR0 and EFER.
+
+### Developers ###
+This project is developed by
+Antonio Le Caldare (kvm skeleton code, gdbstub, keyboard emulation, elf execution)
+Vincent Della Corte (video card text-mode emulation, code polish, comment review)
+Vincenzo Consales (elf loader, bootloader code, custom memory debug server)
+
+as a Virtualization university course project (prof. Giuseppe Lettieri).
+
+### References ###
+Part of kvm bootloading code (for protected, long and paged mode) is took from:
+https://github.com/dpw/kvm-hello-world
+
+The INI reader class code is took from:
+https://github.com/benhoyt/inih
+
+### Notes ###
+Some variable names, comments and commit messages are written in Italian language due to the purpose of the project. Just open an issue instance if you find unreadable code or comments.
