@@ -7,6 +7,7 @@
 #include <cstring>
 #include <sys/mman.h>
 #include <signal.h>
+#include <pthread.h>
 
 #include "frontend/IODevice.h"
 #include "frontend/keyboard.h"
@@ -48,6 +49,11 @@ unsigned char *guest_physical_memory = NULL;
 
 // flag to check kvm debug mode
 bool debug_mode;
+
+// big lock
+//    UNLOCKED when VM is RUNNING
+//    LOCKED when VM IS NOT RUNNING (during KVM_EXIT)
+pthread_mutex_t big_lock;
 
 // global logger
 ConsoleLog& logg = *ConsoleLog::getInstance();
@@ -398,6 +404,9 @@ int main(int argc, char **argv)
 		return 3;
 	}
 
+	// initialize big lock
+	pthread_mutex_init(&big_lock, NULL);
+
     ////////////////////
 	/* the first thing to do is to open the /dev/kvm pseudo-device,
 	 * obtaining a file descriptor.
@@ -562,6 +571,9 @@ int main(int argc, char **argv)
 			return 1;
 		}
 
+		// big lock after KVM_EXIT
+		pthread_mutex_lock(&big_lock);
+
 		switch(kr->exit_reason)
 		{
 			case KVM_EXIT_HLT:
@@ -680,6 +692,10 @@ int main(int argc, char **argv)
 					gdbserver_handle_exception(SIGILL);
 				return 1;
 		}
+
+
+		// big unlock after KVM_EXIT
+		pthread_mutex_unlock(&big_lock);
 	}
 
 	// restore IO
