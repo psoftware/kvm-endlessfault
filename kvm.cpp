@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <iostream>
 #include <iomanip>
+#include <bitset>
 #include <cerrno>
 #include <cstring>
 #include <sys/mman.h>
@@ -349,6 +350,124 @@ void kvm_handle_debug_exit(int vcpu_fd, kvm_debug_exit_arch dbg_arch)
 	gdbserver_handle_exception(SIGTRAP);
 }
 
+int kvm_start_dirty_pages_logging(int vm_fd) {
+	// change memory slot to set dirty page flag
+	kvm_userspace_memory_region mrd = {
+		0,							// slot
+		KVM_MEM_LOG_DIRTY_PAGES,	// start dirty page logging
+		0,							// guest physical addr
+		GUEST_PHYSICAL_MEMORY_SIZE,					// memory size
+		reinterpret_cast<__u64>(guest_physical_memory)		// userspace addr
+	};
+
+	if(ioctl(vm_fd, KVM_SET_USER_MEMORY_REGION, &mrd) < 0) {
+		logg << "kvm_start_dirty_pages_logging: set memory (guest_physical_memory): " << strerror(errno) << endl;
+		return -1;
+	}
+
+	return 0;
+}
+
+void *start_migration(void *param) {
+	int vm_fd = *((int*)param);
+
+	// migration cannot be done while a VM_EXIT is being processed
+	pthread_mutex_lock(&big_lock);
+
+	static const uint16_t PAGE_SIZE = 4096;
+	// 1) Send start message
+	// aspetta risposta
+	logg << "-----> starting migration" << endl;
+
+	// 2) Send all pages at once
+	for(unsigned int i=0; i<GUEST_PHYSICAL_MEMORY_SIZE/PAGE_SIZE; i++)
+		//send(guest_physical_memory[i*4096]);
+		break;
+	// wait for continue
+
+	logg << "-----> first memory transfer completed" << endl;
+
+	// 3) Start dirty page logging
+	if(kvm_start_dirty_pages_logging(vm_fd) < 0)
+		return nullptr;
+
+	// Send all dirty pages
+	kvm_dirty_log dirty_log;
+	memset(&dirty_log, 0, sizeof(dirty_log));
+	dirty_log.slot = 0;
+
+	unsigned int remaining_cycles = 1000;
+
+	while(remaining_cycles-- > 0) {
+		dirty_log.dirty_bitmap = (void*) new uint8_t[GUEST_PHYSICAL_MEMORY_SIZE/PAGE_SIZE/8];
+
+		if(ioctl(vm_fd, KVM_GET_DIRTY_LOG, &dirty_log) < 0) {
+			logg << "start_migration get dirty_log error: " << strerror(errno) << endl;
+			return nullptr;
+		}
+
+
+		uint64_t *dirty_bitmap = reinterpret_cast<uint64_t*>(dirty_log.dirty_bitmap);
+		uint64_t bit_mask = 1u;
+		uint64_t bitmap_offset = 0;
+
+		bool no_more_pages = true;
+		// for each modified page...
+		for(uint64_t i=0; i<GUEST_PHYSICAL_MEMORY_SIZE/PAGE_SIZE; i++)
+		{
+			if(dirty_bitmap[bitmap_offset*(sizeof(bitmap_offset)*8)] & bit_mask)
+			{
+				logg << "page " << i << " is dirty!" << endl;
+				no_more_pages = false; // cycle must go on
+
+				pthread_mutex_unlock(&big_lock);
+				//send();
+				pthread_mutex_lock(&big_lock);
+			}
+
+			//logg << "bitmap_offset = " << bitmap_offset << " bit_mask = " << std::bitset<64>(bit_mask) << " " << bitmap_offset*(sizeof(bitmap_offset)*8) << endl;
+
+			if((i+1) % (sizeof(bitmap_offset)*8) == 0)
+			{
+				bit_mask = 1u;
+				bitmap_offset++;
+			} else
+				bit_mask = bit_mask << 1;
+		}
+
+		// if there are no more dirty pages and we are not at the last cycle (to avoid infinite cycle)
+		if(no_more_pages && remaining_cycles != 0) {
+			// we need just another cycle after stopping VM to be sure that
+			// all the dirty pages are sent to the other VMM instance
+			remaining_cycles = 1;
+			// STOP VM NOW
+		}
+	}
+
+	delete (uint8_t*)dirty_log.dirty_bitmap;
+	// wait for continue
+	logg << "-----> step2 completed" << endl;
+
+	// 4) send IO context
+	// wait for continue
+	logg << "-----> step3 completed" << endl;
+
+	// 5) Send commit message
+	// aspetta risposta
+	// se ok ferma la macchina corrente e chiudi il VMM
+	logg << "-----> migration complete." << endl;
+	pthread_mutex_unlock(&big_lock);
+
+	return nullptr;
+}
+
+// Internal Console _thread
+pthread_t internal_console_thread;
+
+void initInternalConsole(int vm_fd) {
+	pthread_create(&internal_console_thread, NULL, &start_migration, (void*)&vm_fd);
+}
+
 
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 int main(int argc, char **argv)
@@ -552,6 +671,8 @@ int main(int argc, char **argv)
 
 	// now we can initialize IO devices structures for emulation
 	initIO();
+
+	initInternalConsole(vm_fd);
 
 	/* we are finally ready to start the machine, by issuing
 	 * the KVM_RUN ioctl() on the vcpu_fd. While the machine
