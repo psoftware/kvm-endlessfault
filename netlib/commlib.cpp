@@ -60,8 +60,14 @@ int tcp_start_server(const char * bind_addr, int port)
 	return ret_sock;
 }
 
+int tcp_accept_client(int srv_sock) {
+	struct sockaddr_in cl_addr;
+	int my_len = sizeof(cl_addr);
+	return accept(srv_sock, (struct sockaddr*)&cl_addr, (socklen_t*)&my_len);
+}
 
-int recv_variable_message(int cl_sock, uint8_t *buff, uint8_t &type)
+
+int recv_variable_message(int cl_sock, uint8_t* &buff, uint8_t &type)
 {
 	unsigned int bytes_count;
 
@@ -76,6 +82,9 @@ int recv_variable_message(int cl_sock, uint8_t *buff, uint8_t &type)
 		return ret;
 
 	bytes_count=ntohl(bytes_count);
+
+	// allocate buffer
+	buff = new uint8_t[bytes_count];
 
 	// receive all the bytes_count bytes
 	ret = recv(cl_sock, (void*)buff, bytes_count, MSG_WAITALL);

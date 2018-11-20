@@ -32,7 +32,7 @@ Continue
 
 <----->
 Generic Error
-|dim|3|error string|
+|dim|255|error string|
 */
 
 // ---> From source
@@ -40,21 +40,25 @@ Generic Error
 #define TYPE_COMMIT_MIGRATION 2
 
 #define TYPE_DATA_MEMORY 10
-#define TYPE_DATA_CPU_CONTEXT 11
-#define TYPE_DATA_IO_CONTEXT 12
+#define TYPE_DATA_MEMORY_END 11
+#define TYPE_DATA_CPU_CONTEXT 12
+#define TYPE_DATA_IO_CONTEXT 13
 
 // <--- From Destination
 #define TYPE_CONTINUE_MIGRATION 1
 
 // <--> From Both
-#define TYPE_ERROR_MIGRATION 3
+#define TYPE_ERROR_MIGRATION 255
 
-int send_start_migr_message(int cl_sock);
-int send_continue_migr_message(int cl_sock);
-int send_error_migr_message(int cl_sock, char *error_str);
-int send_commit_migr_message(int cl_sock);
-int send_memory_message(int cl_sock, uint32_t page_num, uint64_t *memory_page, uint16_t page_size);
-int send_cpu_context_message(int cl_sock, uint8_t* cpu_data, int size);
-int send_io_context_message(int cl_sock, uint8_t dev_type, uint8_t** device_data, int size);
+int send_start_migr_message(int sock);
+int send_continue_migr_message(int sock);
+int send_error_migr_message(int sock, char *error_str);
+int send_commit_migr_message(int sock);
+int send_memory_end_migr_message(int sock);
+int send_memory_message(int sock, uint32_t page_num, uint64_t *memory_page, uint16_t page_size);
+int send_cpu_context_message(int sock, uint8_t* cpu_data, int size);
+int send_io_context_message(int sock, uint8_t dev_type, uint8_t** device_data, int size);
+
+int wait_for_message(int sock, uint8_t message_type, uint8_t* &buff);
 
 #endif
