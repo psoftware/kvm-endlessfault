@@ -43,7 +43,7 @@ debug-client/debug_client: debug-client/debug_client.o debug-server/net_wrapper.
 	g++ debug-client/debug_client.o debug-server/net_wrapper.o debug-server/messages.o backend/ConsoleLog.o -o debug-client/debug_client $(COMM_CFLAGS)
 #--ompilazione
 
-kvm.o: kvm.cpp backend/*.h frontend/*.h bootloader/Bootloader.h gdbserver/gdbserver.h
+kvm.o: kvm.cpp backend/*.h frontend/*.h bootloader/Bootloader.h gdbserver/gdbserver.h netlib/migration.h netlib/commlib.h
 	g++ -c kvm.cpp -o kvm.o $(COMM_CFLAGS)
 
 frontend/%.o: frontend/%.cpp frontend/%.h

@@ -19,6 +19,8 @@
 #include "bootloader/Bootloader.h"
 #include "backend/ConsoleOutput.h"
 #include "frontend/vgaController.h"
+#include "netlib/migration.h"
+#include "netlib/commlib.h"
 #include "INIReader.h"
 
 #include "gdbserver/gdbserver.h"
@@ -47,6 +49,11 @@ using namespace std;
 // guest memory
 uint32_t GUEST_PHYSICAL_MEMORY_SIZE = 8*1024*1024; //default guest physical memory to 8MB
 unsigned char *guest_physical_memory = NULL;
+
+// main thread
+pthread_t main_thread;
+// internal console thread
+pthread_t internal_console_thread;
 
 // flag to check kvm debug mode
 bool debug_mode;
@@ -368,22 +375,54 @@ int kvm_start_dirty_pages_logging(int vm_fd) {
 	return 0;
 }
 
-void *start_migration(void *param) {
+void *start_source_migration(void *param) {
 	int vm_fd = *((int*)param);
 
-	// migration cannot be done while a VM_EXIT is being processed
-	pthread_mutex_lock(&big_lock);
-
 	static const uint16_t PAGE_SIZE = 4096;
+	static const uint32_t MAX_DIRTY_PAGE_CYCLES = 1000;
+
+	uint8_t *buff;
+	uint32_t size;
+
+	// start connection
+	int cl_sock = tcp_connect("127.0.0.1", 9090);
+	if(cl_sock < 0)
+	{
+		logg << "start_source_migration: cannot connect to migration destination" << endl;
+		return nullptr;
+	}
+
 	// 1) Send start message
+	if(send_start_migr_message(cl_sock) < 0) {
+		logg << "start_source_migration: cannot send start migration -> " << strerror(errno) << endl;
+		return nullptr;
+	}
+
 	// aspetta risposta
+	size = wait_for_message(cl_sock, TYPE_CONTINUE_MIGRATION, buff);
+	if(size == -1) {
+		cout << "start_source_migration: unexpected message TYPE" << endl;
+		exit(1);
+	} else if(size < 0) {
+		cout << "start_source_migration: receive error" << endl;
+		exit(1);
+	}
+
 	logg << "-----> starting migration" << endl;
 
 	// 2) Send all pages at once
 	for(unsigned int i=0; i<GUEST_PHYSICAL_MEMORY_SIZE/PAGE_SIZE; i++)
-		//send(guest_physical_memory[i*4096]);
-		break;
-	// wait for continue
+	{
+		pthread_mutex_lock(&big_lock);
+
+		if(send_memory_message(cl_sock, i, &guest_physical_memory[i*4096], PAGE_SIZE) < 0) {
+			logg << "start_source_migration: cannot send memory page -> " << strerror(errno) << endl;
+			pthread_mutex_unlock(&big_lock);
+			return nullptr;
+		}
+
+		pthread_mutex_unlock(&big_lock);
+	}
 
 	logg << "-----> first memory transfer completed" << endl;
 
@@ -396,7 +435,7 @@ void *start_migration(void *param) {
 	memset(&dirty_log, 0, sizeof(dirty_log));
 	dirty_log.slot = 0;
 
-	unsigned int remaining_cycles = 1000;
+	unsigned int remaining_cycles = MAX_DIRTY_PAGE_CYCLES;
 
 	while(remaining_cycles-- > 0) {
 		dirty_log.dirty_bitmap = (void*) new uint8_t[GUEST_PHYSICAL_MEMORY_SIZE/PAGE_SIZE/8];
@@ -420,9 +459,15 @@ void *start_migration(void *param) {
 				logg << "page " << i << " is dirty!" << endl;
 				no_more_pages = false; // cycle must go on
 
-				pthread_mutex_unlock(&big_lock);
-				//send();
 				pthread_mutex_lock(&big_lock);
+
+				if(send_memory_message(cl_sock, i, &guest_physical_memory[i*4096], PAGE_SIZE) < 0) {
+					logg << "start_source_migration: cannot send memory page -> " << strerror(errno) << endl;
+					pthread_mutex_unlock(&big_lock);
+					return nullptr;
+				}
+
+				pthread_mutex_unlock(&big_lock);
 			}
 
 			//logg << "bitmap_offset = " << bitmap_offset << " bit_mask = " << std::bitset<64>(bit_mask) << " " << bitmap_offset*(sizeof(bitmap_offset)*8) << endl;
@@ -444,34 +489,172 @@ void *start_migration(void *param) {
 		}
 	}
 
+
+	pthread_mutex_lock(&big_lock);
+
 	delete (uint8_t*)dirty_log.dirty_bitmap;
-	// wait for continue
-	logg << "-----> step2 completed" << endl;
 
-	// 4) send IO context
-	// wait for continue
-	logg << "-----> step3 completed" << endl;
+	// send memory end
+	if(send_memory_end_migr_message(cl_sock) < 0) {
+		cout << "start_source_migration: memory dump end message error" << endl;
+		pthread_mutex_unlock(&big_lock);
+		return nullptr;
+	}
 
-	// 5) Send commit message
-	// aspetta risposta
+	// wait for continue
+	size = wait_for_message(cl_sock, TYPE_CONTINUE_MIGRATION, buff);
+	if(size == -1) {
+		cout << "start_source_migration: unexpected message TYPE" << endl;
+		pthread_mutex_unlock(&big_lock);
+		exit(1);
+	} else if(size < 0) {
+		cout << "start_source_migration: receive error" << endl;
+		pthread_mutex_unlock(&big_lock);
+		exit(1);
+	}
+
+	logg << "-----> diff dirty page transfer completed" << endl;
+
+	// 4) send CPU context
+	// wait for continue
+	size = wait_for_message(cl_sock, TYPE_CONTINUE_MIGRATION, buff);
+	if(size == -1) {
+		cout << "start_source_migration: unexpected message TYPE" << endl;
+		exit(1);
+	} else if(size < 0) {
+		cout << "start_source_migration: receive error" << endl;
+		exit(1);
+	}
+
+	logg << "-----> CPU context transfer completed" << endl;
+
+	// 5) send IO context
+	// wait for continue
+	size = wait_for_message(cl_sock, TYPE_CONTINUE_MIGRATION, buff);
+	if(size == -1) {
+		cout << "start_source_migration: unexpected message TYPE" << endl;
+		exit(1);
+	} else if(size < 0) {
+		cout << "start_source_migration: receive error" << endl;
+		exit(1);
+	}
+
+	logg << "-----> IO context transfer completed" << endl;
+
+	// 6) Send commit message
+	if(send_commit_migr_message(cl_sock) < 0) {
+		cout << "start_source_migration: send commit migration error" << endl;
+		exit(1);
+	}
+
+	// wait for continue
+	size = wait_for_message(cl_sock, TYPE_CONTINUE_MIGRATION, buff);
+	if(size == -1) {
+		cout << "start_source_migration: unexpected message TYPE" << endl;
+		exit(1);
+	} else if(size < 0) {
+		cout << "start_source_migration: receive error" << endl;
+		exit(1);
+	}
+
 	// se ok ferma la macchina corrente e chiudi il VMM
 	logg << "-----> migration complete." << endl;
+
 	pthread_mutex_unlock(&big_lock);
 
 	return nullptr;
 }
 
-// Internal Console _thread
-pthread_t internal_console_thread;
+void start_destination_migration() {
+	int srv_sock = tcp_start_server("0.0.0.0", 9090);
+	int cl_sock = tcp_accept_client(srv_sock);
+
+	if(cl_sock < 0){
+		cout << "start_destination_migration: cannot accept client" << endl;
+		exit(1);
+	}
+
+	cout << "client connected" << endl;
+
+	uint8_t *buff;
+	uint32_t size;
+	uint8_t type;
+
+	// 1) Wait for migration start message
+	size = wait_for_message(cl_sock, TYPE_START_MIGRATION, buff);
+	if(size == -1) {
+		cout << "start_destination_migration: unexpected message TYPE" << endl;
+		exit(1);
+	} else if(size < 0) {
+		cout << "start_destination_migration: start migration receive error" << endl;
+		exit(1);
+	}
+
+	cout << "<----- migration start" << endl;
+
+	// send continue
+	send_continue_migr_message(cl_sock);
+
+	// 2/3) Wait for pages until
+	size = recv_variable_message(cl_sock, buff, type);
+	while(type == TYPE_DATA_MEMORY) {
+		// write page
+		size = recv_variable_message(cl_sock, buff, type);
+		if(size < 0) {
+			cout << "start_destination_migration: memory page receive error" << endl;
+			exit(1);
+		}
+	}
+
+	cout << "<----- got memory" << endl;
+
+	if(type != TYPE_DATA_MEMORY_END) {
+		cout << "start_destination_migration: unexpected message TYPE, expecting TYPE_DATA_MEMORY_END" << endl;
+		exit(1);
+	}
+
+	// send continue
+	if(send_continue_migr_message(cl_sock) < 0)  {
+		cout << "start_destination_migration: continue migration receive error" << endl;
+		exit(1);
+	}
+
+	// 4) Wait for CPU Context
+	if(send_continue_migr_message(cl_sock) < 0)  {
+		cout << "start_destination_migration: continue migration receive error" << endl;
+		exit(1);
+	}
+	cout << "<----- got CPU context" << endl;
+
+	// 5) Wait for IO Context
+	if(send_continue_migr_message(cl_sock) < 0)  {
+		cout << "start_destination_migration: continue migration receive error" << endl;
+		exit(1);
+	}
+	cout << "<----- got IO context" << endl;
+
+	// 6) Wait for Commit
+	size = wait_for_message(cl_sock, TYPE_COMMIT_MIGRATION, buff);
+
+	cout << "<----- got Commit" << endl;
+
+	// send continue
+	send_continue_migr_message(cl_sock);
+
+	// start VM...
+	cout << "<----- Starting VM" << endl;
+}
 
 void initInternalConsole(int vm_fd) {
-	pthread_create(&internal_console_thread, NULL, &start_migration, (void*)&vm_fd);
+	pthread_create(&internal_console_thread, NULL, &start_source_migration, (void*)&vm_fd);
 }
 
 
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 int main(int argc, char **argv)
 {
+	main_thread = pthread_self();
+
 	uint32_t mem_size;
 	uint16_t serv_port;
 
