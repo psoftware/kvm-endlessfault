@@ -16,6 +16,9 @@ ELF_HEADER_FILES := $(wildcard elf/*.h)
 GDBSERVER_OBJ_FILES = gdbserver/gdbserver.o
 GDBSERVER_HEADER_FILES := $(wildcard gdbserver/*.h)
 
+NETLIB_CPP_FILES := $(wildcard netlib/*.cpp)
+NETLIB_OBJ_FILES = $(patsubst netlib/%.cpp,netlib/%.o,$(NETLIB_CPP_FILES))
+
 
 ## -- linking
 
@@ -24,8 +27,8 @@ all: kvm build build/boot64 build/prog_prova build/keyboard_program build/ricors
 build:
 	mkdir -p build/
 
-kvm: kvm.o bootloader/Bootloader.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) $(GDBSERVER_OBJ_FILES) $(DEBUGSERVER_OBJ_FILES)
-	g++ kvm.o bootloader/Bootloader.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) $(GDBSERVER_OBJ_FILES) $(DEBUGSERVER_OBJ_FILES) -o kvm $(LD_FLAGS)
+kvm: kvm.o bootloader/Bootloader.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) $(GDBSERVER_OBJ_FILES) $(DEBUGSERVER_OBJ_FILES) $(NETLIB_OBJ_FILES)
+	g++ kvm.o bootloader/Bootloader.o $(FRONTEND_OBJ_FILES) $(BACKEND_OBJ_FILES) $(ELF_OBJ_FILES) $(GDBSERVER_OBJ_FILES) $(DEBUGSERVER_OBJ_FILES) $(NETLIB_OBJ_FILES) -o kvm $(LD_FLAGS)
 
 build/prog_prova: target/prog_prova.c target/lib.s target/lib.h
 	gcc $(ELFPROG_CFLAGS) target/prog_prova.c target/lib.s -o build/prog_prova
@@ -49,6 +52,9 @@ frontend/%.o: frontend/%.cpp frontend/%.h
 backend/%.o: backend/%.cpp backend/%.h
 	g++ -c -o $@ $< $(COMM_CFLAGS)
 
+netlib/%.o: netlib/%.cpp netlib/%.h
+	g++ -c -o $@ $< $(COMM_CFLAGS)
+
 debug-server/messages.o: debug-server/messages.c debug-server/messages.h
 	gcc -c debug-server/messages.c -o debug-server/messages.o
 
@@ -70,7 +76,7 @@ debug-client/debug_client.o: debug-client/debug_client.cpp debug-server/net_wrap
 build/boot64: bootloader/boot64.S
 	g++ -m32 -nostdlib -fno-exceptions -g -fno-rtti -fno-stack-protector -mno-red-zone -gdwarf-2 -fpic -m32 -Ttext=0x2000 -no-pie bootloader/boot64.S -o build/boot64 -Wl,-fuse-ld=gold
 clean:
-	rm -f *.o frontend/*.o backend/*.o elf/*.o debug-server/*.o debug-client/*.o
+	rm -f *.o frontend/*.o backend/*.o elf/*.o debug-server/*.o debug-client/*.o netlib/*.o
 	rm -f kvm debug-client/debug_client
 	rm -f build/*
 	rm -f bootloader/*.o
