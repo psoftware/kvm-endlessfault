@@ -83,6 +83,11 @@ int recv_variable_message(int cl_sock, uint8_t* &buff, uint8_t &type)
 
 	bytes_count=ntohl(bytes_count);
 
+	if(bytes_count == 0) {
+		printf("empty message\n");
+		return bytes_count;
+	}
+
 	// allocate buffer
 	buff = new uint8_t[bytes_count];
 
@@ -110,6 +115,10 @@ int send_variable_message(int cl_sock, uint8_t type, uint8_t *buff, uint32_t byt
 	int net_bytes_count = htonl(bytes_count);
 	ret = send(cl_sock, (unsigned int*)&net_bytes_count, sizeof(unsigned int), 0);
 	if(ret == 0 || ret == -1)
+		return ret;
+
+	// if buff is empty don't continue
+	if(bytes_count == 0)
 		return ret;
 
 	// send all buffer bytes
