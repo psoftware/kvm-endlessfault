@@ -16,7 +16,9 @@
 #include <errno.h>
 #include <cstdint>
 
-int tcp_connect(uint16_t port, char *ip_addr) {
+#include "commlib.h"
+
+int tcp_connect(const char *ip_addr, uint16_t port) {
 	int sock_client = socket(AF_INET, SOCK_STREAM, 0);
 
 	struct sockaddr_in srv_addr;
@@ -25,7 +27,6 @@ int tcp_connect(uint16_t port, char *ip_addr) {
 	srv_addr.sin_port = htons(port);
 	inet_pton(AF_INET, ip_addr, &srv_addr.sin_addr);
 
-	// effettuo la connect al server indicato
 	if(connect(sock_client, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) == -1)
 	{
 		perror("commlib: connect fail");
@@ -35,6 +36,30 @@ int tcp_connect(uint16_t port, char *ip_addr) {
 	//printf("\nConnected to server %s:%d) \n\n", argv[1], porta);
 	return 0;
 }
+
+int tcp_start_server(const char * bind_addr, int port)
+{
+	int ret_sock = socket(AF_INET, SOCK_STREAM, 0);
+	struct sockaddr_in my_addr;
+	memset(&my_addr, 0, sizeof(my_addr));
+	my_addr.sin_family = AF_INET;
+	my_addr.sin_port = htons(port);
+	inet_pton(AF_INET, bind_addr, &my_addr.sin_addr);
+
+	if(bind(ret_sock, (struct sockaddr*)&my_addr, sizeof(my_addr)) == -1)
+	{
+		perror("Bind fallita");
+		return -1;
+	}
+	if(listen(ret_sock, 10) == -1)
+	{
+		perror("Listen fallita");
+		return -1;
+	}
+
+	return ret_sock;
+}
+
 
 int recv_variable_message(int cl_sock, uint8_t *buff, uint8_t &type)
 {
@@ -90,7 +115,7 @@ int send_variable_message(int cl_sock, uint8_t type, uint8_t *buff, uint32_t byt
 	return ret;
 }
 
-int recv_field_message(int cl_sock, uint8_t **field_data, uint8_t* &bytes_count, uint8_t &type, uint8_t &subtype)
+int recv_field_message(int cl_sock, uint8_t &type, uint8_t &subtype, netfields& nfields)
 {
 	int ret;
 
@@ -106,16 +131,15 @@ int recv_field_message(int cl_sock, uint8_t **field_data, uint8_t* &bytes_count,
 
 
 	// receive the number of fields to read
-	unsigned int field_count;
-	ret = recv(cl_sock, (void*)&field_count, sizeof(uint32_t), MSG_WAITALL);
+	ret = recv(cl_sock, (void*)&nfields.count, sizeof(uint32_t), MSG_WAITALL);
 	if(ret == 0 || ret == -1)
 		return ret;
 
-	// allocate field_data and bytes_count
-	field_data = new uint8_t*[field_count];
-	bytes_count = new uint8_t[field_count];
+	// allocate nfields.data and nfields.size
+	nfields.data = new uint8_t*[nfields.count];
+	nfields.size = new uint8_t[nfields.count];
 
-	for(uint32_t field=0; field<field_count; field++) {
+	for(uint32_t field=0; field<nfields.count; field++) {
 		// receive the field size
 		uint32_t field_len;
 		ret = recv(cl_sock, (void*)&field_len, sizeof(uint32_t), MSG_WAITALL);
@@ -123,13 +147,13 @@ int recv_field_message(int cl_sock, uint8_t **field_data, uint8_t* &bytes_count,
 			return ret;
 
 		// save field len
-		bytes_count[field] = field_len;
+		nfields.size[field] = field_len;
 
 		// allocate field
-		field_data[field] = new uint8_t[field_len];
+		nfields.data[field] = new uint8_t[field_len];
 
 		// receive field
-		ret = recv(cl_sock, (void*)field_data[field], bytes_count[field], MSG_WAITALL);
+		ret = recv(cl_sock, (void*)nfields.data[field], nfields.size[field], MSG_WAITALL);
 		if(ret == 0 || ret == -1)
 			return ret;
 		if(ret < field_len)
@@ -143,7 +167,7 @@ int recv_field_message(int cl_sock, uint8_t **field_data, uint8_t* &bytes_count,
 	return ret;
 }
 
-int send_field_message(int cl_sock, uint8_t type, uint8_t subtype, uint8_t **field_data, uint32_t *bytes_count, uint32_t field_count)
+int send_field_message(int cl_sock, uint8_t type, uint8_t subtype, const netfields& nfields)
 {
 	// send the message type
 	int ret = send(cl_sock, &type, sizeof(uint8_t), 0);
@@ -151,24 +175,24 @@ int send_field_message(int cl_sock, uint8_t type, uint8_t subtype, uint8_t **fie
 		return ret;
 
 	// send the number of array elements to read
-	int net_field_count = htonl(field_count);
-	ret = send(cl_sock, (unsigned int*)&net_field_count, sizeof(uint32_t), 0);
+	int net_field_count = htonl(nfields.count);
+	ret = send(cl_sock, (unsigned int*)&net_field_count, sizeof(nfields.count), 0);
 	if(ret == 0 || ret == -1)
 		return ret;
 
 	// send all fields
-	for(uint32_t field=0; field<field_count; field++)
+	for(uint32_t field=0; field<nfields.count; field++)
 	{
 		// send the field size
-		int net_bytes_count = htonl(bytes_count[field]);
+		int net_bytes_count = htonl(nfields.size[field]);
 		ret = send(cl_sock, (unsigned int*)&net_bytes_count, sizeof(uint32_t), 0);
 		if(ret == 0 || ret == -1)
 			return ret;
 
-		ret = send(cl_sock, (void*)field_data[field], bytes_count[field], 0);
+		ret = send(cl_sock, (void*)nfields.data[field], nfields.size[field], 0);
 		if(ret == 0 || ret == -1)
 			return ret;
-		if(ret < (int)bytes_count[field])
+		if(ret < (int)nfields.size[field])
 		{
 			printf("send_variable_message: Received (%d) less bytes then sent ones!\n", ret);
 			return -1;

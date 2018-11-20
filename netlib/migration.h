@@ -3,6 +3,9 @@
 
 #include <cstdint>
 
+#include "migration.h"
+#include "commlib.h"
+
 /*
 |dim (byte)|tipo messaggio|info....|
    8 byte       1 byte       dim
@@ -14,13 +17,13 @@ Start Migration
 Commit Migration
 |dim|2|
 
-Memoria
+Memory
 |dim|10|num pagina|pagina 4k|
 
-Contesto
+CPU Context
 |dim|11|contesto...|
 
-Dispostivi IO
+IO Context
 |dim|12|dev id|field count|field 1 size|field 1|field 2 size|field 2|...|field n size|field n|
 
 <------
@@ -28,8 +31,8 @@ Continue
 |dim|1|
 
 <----->
-Errore
-|dim|3|stringa errore?|
+Generic Error
+|dim|3|error string|
 */
 
 // ---> From source
@@ -45,10 +48,6 @@ Errore
 
 // <--> From Both
 #define TYPE_ERROR_MIGRATION 3
-
-
-#include "migration.h"
-#include "commlib.h"
 
 int send_start_migr_message(int cl_sock);
 int send_continue_migr_message(int cl_sock);
