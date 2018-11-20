@@ -34,7 +34,7 @@ int tcp_connect(const char *ip_addr, uint16_t port) {
 	}
 
 	//printf("\nConnected to server %s:%d) \n\n", argv[1], porta);
-	return 0;
+	return sock_client;
 }
 
 int tcp_start_server(const char * bind_addr, int port)
