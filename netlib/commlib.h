@@ -59,8 +59,10 @@ struct netfields {
 	}
 
 	~netfields() {
-		delete[] data;
-		delete[] size;
+		printf("Destructing...\n");
+		fflush(0);
+		//delete[] data;
+		//delete[] size;
 	}
 
 };

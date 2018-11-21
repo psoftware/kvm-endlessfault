@@ -186,14 +186,20 @@ int recv_field_message(int cl_sock, uint8_t &type, uint8_t &subtype, netfields& 
 
 int send_field_message(int cl_sock, uint8_t type, uint8_t subtype, const netfields& nfields)
 {
+	int ret;
+
 	// send the message type
-	int ret = send(cl_sock, &type, sizeof(uint8_t), 0);
+	ret = send(cl_sock, &type, sizeof(uint8_t), 0);
+	if(ret == 0 || ret == -1)
+		return ret;
+
+	// send the message subtype
+	ret = send(cl_sock, &subtype, sizeof(uint8_t), 0);
 	if(ret == 0 || ret == -1)
 		return ret;
 
 	// send the number of array elements to read
-	int net_field_count = htonl(nfields.count);
-	ret = send(cl_sock, (unsigned int*)&net_field_count, sizeof(nfields.count), 0);
+	ret = send(cl_sock, (void*)(&nfields.count), sizeof(nfields.count), 0);
 	if(ret == 0 || ret == -1)
 		return ret;
 
@@ -201,8 +207,7 @@ int send_field_message(int cl_sock, uint8_t type, uint8_t subtype, const netfiel
 	for(uint32_t field=0; field<nfields.count; field++)
 	{
 		// send the field size
-		int net_bytes_count = htonl(nfields.size[field]);
-		ret = send(cl_sock, (unsigned int*)&net_bytes_count, sizeof(uint32_t), 0);
+		ret = send(cl_sock, (void*)&nfields.size[field], sizeof(uint32_t), 0);
 		if(ret == 0 || ret == -1)
 			return ret;
 
