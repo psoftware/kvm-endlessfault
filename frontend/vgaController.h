@@ -44,7 +44,7 @@ public:
 	uint16_t* getVMem();
 
 	// for network serialization
-	bool field_serialize(netfields &nfields);
+	bool field_serialize(netfields* &nfields);
 	bool field_deserialize(netfields &nfields);
 };
 

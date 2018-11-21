@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <string.h>
+#include <stdio.h>
 
 int check_port_str(char *str);
 
@@ -13,9 +14,15 @@ int recv_variable_message(int cl_sock, uint8_t* &buff, uint8_t &type);
 int send_variable_message(int cl_sock, uint8_t type, uint8_t *buff, uint32_t bytes_count);
 
 struct netfields {
+private:
+	netfields(const netfields& nfields) {}
+	netfields operator=(const netfields& nfields){}
+
+public:
 	uint32_t count;
 	uint8_t **data;
 	uint32_t *size;
+
 
 	netfields() {
 		count = 0;
@@ -59,15 +66,15 @@ struct netfields {
 	}
 
 	~netfields() {
-		printf("Destructing...\n");
+		printf("Destroying %p\n", data);
 		fflush(0);
-		//delete[] data;
-		//delete[] size;
+		delete[] data;
+		delete[] size;
 	}
 
 };
 
-int recv_field_message(int cl_sock, uint8_t &type, uint8_t &subtype, netfields& nfields);
+int recv_field_message(int cl_sock, uint8_t &type, uint8_t &subtype, netfields* &nfields);
 int send_field_message(int cl_sock, uint8_t type, uint8_t subtype, const netfields& nfields);
 
 #endif

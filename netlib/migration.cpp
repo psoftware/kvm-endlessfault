@@ -2,6 +2,7 @@
 #include "commlib.h"
 #include <cstdint>
 #include <cstring>
+#include <stdio.h>
 
 int send_start_migr_message(int sock) {
 	return send_variable_message(sock, TYPE_START_MIGRATION, NULL, 0);

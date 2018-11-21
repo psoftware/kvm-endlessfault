@@ -133,7 +133,7 @@ int send_variable_message(int cl_sock, uint8_t type, uint8_t *buff, uint32_t byt
 	return ret;
 }
 
-int recv_field_message(int cl_sock, uint8_t &type, uint8_t &subtype, netfields& nfields)
+int recv_field_message(int cl_sock, uint8_t &type, uint8_t &subtype, netfields* &nfields)
 {
 	int ret;
 
@@ -147,30 +147,35 @@ int recv_field_message(int cl_sock, uint8_t &type, uint8_t &subtype, netfields& 
 	if(ret == 0 || ret == -1)
 		return ret;
 
-
 	// receive the number of fields to read
-	ret = recv(cl_sock, (void*)&nfields.count, sizeof(uint32_t), MSG_WAITALL);
+	uint32_t fields_count;
+	ret = recv(cl_sock, (void*)&fields_count, sizeof(uint32_t), MSG_WAITALL);
 	if(ret == 0 || ret == -1)
 		return ret;
 
-	// allocate nfields.data and nfields.size
-	nfields = netfields(nfields.count);
+	printf("got type %u\n", type);
+	printf("got %u fields\n", fields_count);
 
-	for(uint32_t field=0; field<nfields.count; field++) {
+	// allocate nfields->data and nfields->size
+	nfields = new netfields(fields_count);
+
+	for(uint32_t field=0; field<nfields->count; field++) {
 		// receive the field size
 		uint32_t field_len;
 		ret = recv(cl_sock, (void*)&field_len, sizeof(uint32_t), MSG_WAITALL);
 		if(ret == 0 || ret == -1)
 			return ret;
 
+		printf("field %u with size %u\n", field, field_len);
+
 		// save field len
-		nfields.size[field] = field_len;
+		nfields->size[field] = field_len;
 
 		// allocate field
-		nfields.data[field] = new uint8_t[field_len];
+		nfields->data[field] = new uint8_t[field_len];
 
 		// receive field
-		ret = recv(cl_sock, (void*)nfields.data[field], nfields.size[field], MSG_WAITALL);
+		ret = recv(cl_sock, (void*)nfields->data[field], nfields->size[field], MSG_WAITALL);
 		if(ret == 0 || ret == -1)
 			return ret;
 		if(ret < field_len)

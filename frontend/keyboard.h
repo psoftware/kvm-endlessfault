@@ -65,7 +65,7 @@ public:
 	void insert_keycode_event(uint8_t keycode);
 
 	// for network serialization
-	bool field_serialize(netfields &nfields);
+	bool field_serialize(netfields* &nfields);
 	bool field_deserialize(netfields &nfields);
 };
 

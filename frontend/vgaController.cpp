@@ -126,17 +126,15 @@ uint16_t* VGAController::getVMem(){
 }
 
 // for network serialization
-bool VGAController::field_serialize(netfields &nfields) {
-	memset(&nfields, 0, sizeof(nfields));
-
-	nfields = netfields(4);
+bool VGAController::field_serialize(netfields* &nfields) {
+	nfields = new netfields(4);
 	int f_id = 0;
 
 	// === Registers ===
-	nfields.set_field(f_id, &IND, sizeof(uint8_t)); f_id++;
-	nfields.set_field(f_id, &DAT, sizeof(uint8_t)); f_id++;
-	nfields.set_field(f_id, &CUR_HIGH, sizeof(uint8_t)); f_id++;
-	nfields.set_field(f_id, &CUR_LOW, sizeof(uint8_t)); f_id++;
+	nfields->set_field(f_id, &IND, sizeof(uint8_t)); f_id++;
+	nfields->set_field(f_id, &DAT, sizeof(uint8_t)); f_id++;
+	nfields->set_field(f_id, &CUR_HIGH, sizeof(uint8_t)); f_id++;
+	nfields->set_field(f_id, &CUR_LOW, sizeof(uint8_t)); f_id++;
 
 	// uint16_t* _memoryStart;
 	// ADDRESS! Must be reinitialized by the new VMM instance
