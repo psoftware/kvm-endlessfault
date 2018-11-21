@@ -60,6 +60,7 @@ int send_error_migr_message(int sock, char *error_str);
 int send_commit_migr_message(int sock);
 int send_memory_end_migr_message(int sock);
 int send_memory_message(int sock, uint32_t page_num, uint8_t *memory_page, uint32_t page_size);
+int receive_memory_message(int sock, uint32_t &page_num, uint8_t* &memory_page, uint8_t &type);
 int send_cpu_context_message(int sock, uint8_t* cpu_data, int size);
 int send_io_context_message(int sock, uint8_t dev_type, uint8_t** device_field, uint16_t * device_field_size, int size);
 

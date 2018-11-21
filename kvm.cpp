@@ -615,14 +615,26 @@ void start_destination_migration() {
 	send_continue_migr_message(cl_sock);
 
 	// 2/3) Wait for pages until
-	size = recv_variable_message(cl_sock, buff, type);
-	while(type == TYPE_DATA_MEMORY) {
-		// write page
-		size = recv_variable_message(cl_sock, buff, type);
+	uint32_t page_num;
+	uint8_t *page_data;
+
+	while(true) {
+		// get next page
+		size = receive_memory_message(cl_sock, page_num, page_data, type);
 		if(size < 0) {
 			cout << "start_destination_migration: memory page receive error" << endl;
 			exit(1);
 		}
+
+		if(type != TYPE_DATA_MEMORY)
+			break;
+
+		// write page
+		//printf("%lu\n", reinterpret_cast<long unsigned int>(page_data));
+		delete[] page_data;
+
+
+		//guest_physical_memory[]
 	}
 
 	cout << "<----- got memory" << endl;
