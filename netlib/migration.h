@@ -6,7 +6,7 @@
 #include "migration.h"
 #include "commlib.h"
 
-/*
+/*********  Packets *********
 |dim (byte)|tipo messaggio|info....|
    8 byte       1 byte       dim
 
@@ -49,6 +49,10 @@ Generic Error
 
 // <--> From Both
 #define TYPE_ERROR_MIGRATION 255
+
+// Device types
+#define IO_TYPE_KEYBOARD 0
+#define IO_TYPE_VGACONTROLLER 1
 
 int send_start_migr_message(int sock);
 int send_continue_migr_message(int sock);
