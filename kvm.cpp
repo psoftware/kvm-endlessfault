@@ -529,6 +529,25 @@ void *start_source_migration(void *param) {
 	logg << "-----> CPU context transfer completed" << endl;
 
 	// 5) send IO context
+	// IO_TYPE_KEYBOARD
+	netfields nfields_keyboard;
+	keyb.field_serialize(nfields_keyboard);
+	if(send_field_message(cl_sock, TYPE_DATA_IO_CONTEXT, IO_TYPE_KEYBOARD, nfields_keyboard) < 0) {
+		cout << "start_source_migration: send_field_message send error" << endl;
+		exit(1);
+	}
+	nfields_keyboard.dealloc_fields();
+
+	// IO_TYPE_VGACONTROLLER
+	netfields nfields_vga;
+	vga.field_serialize(nfields_vga);
+	if(send_field_message(cl_sock, TYPE_DATA_IO_CONTEXT, IO_TYPE_VGACONTROLLER, nfields_vga) < 0) {
+		cout << "start_source_migration: send_field_message send error" << endl;
+		exit(1);
+	}
+	nfields_vga.dealloc_fields();
+
+
 	// wait for continue
 	size = wait_for_message(cl_sock, TYPE_CONTINUE_MIGRATION, buff);
 	if(size == -1) {
@@ -627,6 +646,25 @@ void start_destination_migration() {
 	cout << "<----- got CPU context" << endl;
 
 	// 5) Wait for IO Context
+	uint8_t subtype;
+
+	// IO_TYPE_KEYBOARD
+	netfields nfields_keyboard;
+	if(recv_field_message(cl_sock, type, subtype, nfields_keyboard) < 0 || type != TYPE_DATA_IO_CONTEXT || subtype != IO_TYPE_KEYBOARD) {
+		cout << "start_destination_migration: nfields_keyboard receive error" << endl;
+		exit(1);
+	}
+	keyb.field_deserialize(nfields_keyboard);
+
+	// IO_TYPE_VGACONTROLLER
+	netfields nfields_vga;
+	if(recv_field_message(cl_sock, type, subtype, nfields_vga) < 0 || type != TYPE_DATA_IO_CONTEXT || subtype != IO_TYPE_VGACONTROLLER) {
+		cout << "start_destination_migration: nfields_vga receive error" << endl;
+		exit(1);
+	}
+	vga.field_deserialize(nfields_vga);
+
+	// send continue
 	if(send_continue_migr_message(cl_sock) < 0)  {
 		cout << "start_destination_migration: continue migration receive error" << endl;
 		exit(1);

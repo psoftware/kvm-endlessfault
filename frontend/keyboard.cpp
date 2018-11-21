@@ -1,6 +1,8 @@
 #include "keyboard.h"
 #include <iostream>
 
+#include <string.h>
+
 using namespace std;
 
 keyboard::keyboard() : RBR(0), TBR(0), STR(0), CMR(0), enabled(false), interrupt_enabled(false),
@@ -119,4 +121,68 @@ void keyboard::insert_keycode_event(uint8_t keycode)
 
 err:
 	pthread_mutex_unlock(&mutex);
+}
+
+// for network serialization
+bool keyboard::field_serialize(netfields &nfields) {
+	memset(&nfields, 0, sizeof(nfields));
+
+	nfields = netfields(12);
+	int f_id = 0;
+
+	// === Registers ===
+	nfields.set_field(f_id, &RBR, sizeof(uint8_t)); f_id++;
+	nfields.set_field(f_id, &TBR, sizeof(uint8_t)); f_id++;
+	nfields.set_field(f_id, &STR, sizeof(uint8_t)); f_id++;
+	nfields.set_field(f_id, &CMR, sizeof(uint8_t)); f_id++;
+
+	// === Internal State ===
+	nfields.set_field(f_id, (uint8_t*)(&enabled), sizeof(bool)); f_id++;
+	nfields.set_field(f_id, (uint8_t*)(&interrupt_enabled), sizeof(bool)); f_id++;
+
+	// === Internal buffer ===
+	nfields.set_field(f_id, internal_buffer, INTERNAL_BUFFER_SIZE); f_id++;
+	nfields.set_field(f_id, (uint8_t*)(&buffer_head_pointer), sizeof(short)); f_id++;
+	nfields.set_field(f_id, (uint8_t*)(&buffer_tail_pointer), sizeof(short)); f_id++;
+	nfields.set_field(f_id, (uint8_t*)(&buffer_element_count), sizeof(short)); f_id++;
+
+	nfields.set_field(f_id, (uint8_t*)(&interrupt_raised), sizeof(bool)); f_id++;
+
+	// mutex istanza (vale sia per frontend che backend)
+	// come farlo? Mi basterebbe solo il counter interno...
+	// pthread_mutex_t mutex;
+
+	return true;
+}
+
+bool keyboard::field_deserialize(netfields &nfields) {
+	// Check expected fields
+	if(nfields.count != 12)
+		return false;
+
+	int f_id = 0;
+
+	// === Registers ===
+	nfields.get_field(f_id, &RBR, sizeof(uint8_t)); f_id++;
+	nfields.get_field(f_id, &TBR, sizeof(uint8_t)); f_id++;
+	nfields.get_field(f_id, &STR, sizeof(uint8_t)); f_id++;
+	nfields.get_field(f_id, &CMR, sizeof(uint8_t)); f_id++;
+
+	// === Internal State ===
+	nfields.get_field(f_id, (uint8_t*)(&enabled), sizeof(bool)); f_id++;
+	nfields.get_field(f_id, (uint8_t*)(&interrupt_enabled), sizeof(bool)); f_id++;
+
+	// === Internal buffer ===
+	nfields.get_field(f_id, internal_buffer, INTERNAL_BUFFER_SIZE); f_id++;
+	nfields.get_field(f_id, (uint8_t*)(&buffer_head_pointer), sizeof(short)); f_id++;
+	nfields.get_field(f_id, (uint8_t*)(&buffer_tail_pointer), sizeof(short)); f_id++;
+	nfields.get_field(f_id, (uint8_t*)(&buffer_element_count), sizeof(short)); f_id++;
+
+	nfields.get_field(f_id, (uint8_t*)(&interrupt_raised), sizeof(bool)); f_id++;
+
+	// mutex istanza (vale sia per frontend che backend)
+	// come farlo? Mi basterebbe solo il counter interno...
+	// pthread_mutex_t mutex;
+
+	return true;
 }
