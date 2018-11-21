@@ -53,6 +53,9 @@ int receive_memory_message(int sock, uint32_t &page_num, uint8_t* &memory_page, 
 	page_num = subtype;
 	memory_page = nfields->data[0];
 	printf("received nfields->data = %p\n", nfields->data[0]);
+
+	delete nfields;
+
 	return ret;
 }
 

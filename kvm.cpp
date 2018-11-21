@@ -537,6 +537,7 @@ void *start_source_migration(void *param) {
 		exit(1);
 	}
 	nfields_keyboard->dealloc_fields();
+	delete nfields_keyboard;
 
 	// IO_TYPE_VGACONTROLLER
 	netfields *nfields_vga;
@@ -546,6 +547,7 @@ void *start_source_migration(void *param) {
 		exit(1);
 	}
 	nfields_vga->dealloc_fields();
+	delete nfields_vga;
 
 
 	// wait for continue
@@ -668,6 +670,7 @@ void start_destination_migration() {
 		exit(1);
 	}
 	keyb.field_deserialize(*nfields_keyboard);
+	delete nfields_keyboard;
 
 	// IO_TYPE_VGACONTROLLER
 	netfields *nfields_vga;
@@ -676,6 +679,7 @@ void start_destination_migration() {
 		exit(1);
 	}
 	vga.field_deserialize(*nfields_vga);
+	delete nfields_vga;
 
 	// send continue
 	if(send_continue_migr_message(cl_sock) < 0)  {
