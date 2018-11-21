@@ -48,6 +48,7 @@ using namespace std;
 
 // guest memory
 uint32_t GUEST_PHYSICAL_MEMORY_SIZE = 8*1024*1024; //default guest physical memory to 8MB
+static const uint16_t PAGE_SIZE = 4096;
 unsigned char *guest_physical_memory = NULL;
 
 // main thread
@@ -378,7 +379,6 @@ int kvm_start_dirty_pages_logging(int vm_fd) {
 void *start_source_migration(void *param) {
 	int vm_fd = *((int*)param);
 
-	static const uint16_t PAGE_SIZE = 4096;
 	static const uint32_t MAX_DIRTY_PAGE_CYCLES = 1000;
 
 	uint8_t *buff;
@@ -629,12 +629,13 @@ void start_destination_migration() {
 		if(type != TYPE_DATA_MEMORY)
 			break;
 
+		cout << "page_num = " << page_num << " addr = " << (void*)page_data << "guest_addr = " << (void*)guest_physical_memory << endl;
+
 		// write page
-		//printf("%lu\n", reinterpret_cast<long unsigned int>(page_data));
+		memcpy(&guest_physical_memory[page_num*PAGE_SIZE], (void*)page_data, PAGE_SIZE);
+
+		// delete buffer
 		delete[] page_data;
-
-
-		//guest_physical_memory[]
 	}
 
 	cout << "<----- got memory" << endl;
