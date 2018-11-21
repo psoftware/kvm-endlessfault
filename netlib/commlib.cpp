@@ -154,8 +154,7 @@ int recv_field_message(int cl_sock, uint8_t &type, uint8_t &subtype, netfields& 
 		return ret;
 
 	// allocate nfields.data and nfields.size
-	nfields.data = new uint8_t*[nfields.count];
-	nfields.size = new uint8_t[nfields.count];
+	nfields = netfields(nfields.count);
 
 	for(uint32_t field=0; field<nfields.count; field++) {
 		// receive the field size
