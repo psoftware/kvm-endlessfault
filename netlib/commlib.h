@@ -1,9 +1,9 @@
 #ifndef COMMLIB_H_
 #define COMMLIB_H_
 
-#include <cstdint>
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 
 int check_port_str(char *str);
 

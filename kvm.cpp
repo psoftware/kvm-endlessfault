@@ -21,6 +21,7 @@
 #include "frontend/vgaController.h"
 #include "netlib/migration.h"
 #include "netlib/commlib.h"
+#include "backend/InternalConsole.h"
 #include "INIReader.h"
 
 #include "gdbserver/gdbserver.h"
@@ -51,6 +52,9 @@ uint32_t GUEST_PHYSICAL_MEMORY_SIZE = 8*1024*1024; //default guest physical memo
 static const uint16_t PAGE_SIZE = 4096;
 unsigned char *guest_physical_memory = NULL;
 
+// kvm vm_fd
+int global_vm_fd;
+
 // main thread
 pthread_t main_thread;
 // internal console thread
@@ -78,6 +82,9 @@ serial_port* com4 = nullptr;
 
 // keyboard backend
 ConsoleInput* console_in;
+
+// internal console
+InternalConsole int_console;
 
 //text mode video memory emulation  
 ConsoleOutput* console_out = nullptr;
@@ -376,9 +383,7 @@ int kvm_start_dirty_pages_logging(int vm_fd) {
 	return 0;
 }
 
-void *start_source_migration(void *param) {
-	int vm_fd = *((int*)param);
-
+void start_source_migration(int vm_fd) {
 	static const uint32_t MAX_DIRTY_PAGE_CYCLES = 1000;
 
 	uint8_t *buff;
@@ -389,13 +394,13 @@ void *start_source_migration(void *param) {
 	if(cl_sock < 0)
 	{
 		logg << "start_source_migration: cannot connect to migration destination" << endl;
-		return nullptr;
+		return;
 	}
 
 	// 1) Send start message
 	if(send_start_migr_message(cl_sock) < 0) {
 		logg << "start_source_migration: cannot send start migration -> " << strerror(errno) << endl;
-		return nullptr;
+		return;
 	}
 
 	// aspetta risposta
@@ -409,6 +414,7 @@ void *start_source_migration(void *param) {
 	}
 
 	logg << "-----> starting migration" << endl;
+	int_console.print_string("-----> starting migration\n");
 
 	// 2) Send all pages at once
 	for(unsigned int i=0; i<GUEST_PHYSICAL_MEMORY_SIZE/PAGE_SIZE; i++)
@@ -418,17 +424,18 @@ void *start_source_migration(void *param) {
 		if(send_memory_message(cl_sock, i, &guest_physical_memory[i*4096], PAGE_SIZE) < 0) {
 			logg << "start_source_migration: cannot send memory page -> " << strerror(errno) << endl;
 			pthread_mutex_unlock(&big_lock);
-			return nullptr;
+			return;
 		}
 
 		pthread_mutex_unlock(&big_lock);
 	}
 
 	logg << "-----> first memory transfer completed" << endl;
+	int_console.print_string("-----> first memory transfer completed\n");
 
 	// 3) Start dirty page logging
 	if(kvm_start_dirty_pages_logging(vm_fd) < 0)
-		return nullptr;
+		return;
 
 	// Send all dirty pages
 	kvm_dirty_log dirty_log;
@@ -442,7 +449,7 @@ void *start_source_migration(void *param) {
 
 		if(ioctl(vm_fd, KVM_GET_DIRTY_LOG, &dirty_log) < 0) {
 			logg << "start_migration get dirty_log error: " << strerror(errno) << endl;
-			return nullptr;
+			return;
 		}
 
 
@@ -464,7 +471,7 @@ void *start_source_migration(void *param) {
 				if(send_memory_message(cl_sock, i, &guest_physical_memory[i*4096], PAGE_SIZE) < 0) {
 					logg << "start_source_migration: cannot send memory page -> " << strerror(errno) << endl;
 					pthread_mutex_unlock(&big_lock);
-					return nullptr;
+					return;
 				}
 
 				pthread_mutex_unlock(&big_lock);
@@ -498,7 +505,7 @@ void *start_source_migration(void *param) {
 	if(send_memory_end_migr_message(cl_sock) < 0) {
 		cout << "start_source_migration: memory dump end message error" << endl;
 		pthread_mutex_unlock(&big_lock);
-		return nullptr;
+		return;
 	}
 
 	// wait for continue
@@ -514,6 +521,7 @@ void *start_source_migration(void *param) {
 	}
 
 	logg << "-----> diff dirty page transfer completed" << endl;
+	int_console.print_string("-----> diff dirty page transfer completed\n");
 
 	// 4) send CPU context
 	// wait for continue
@@ -527,6 +535,7 @@ void *start_source_migration(void *param) {
 	}
 
 	logg << "-----> CPU context transfer completed" << endl;
+	int_console.print_string("-----> CPU context transfer completed\n");
 
 	// 5) send IO context
 	// IO_TYPE_KEYBOARD
@@ -561,6 +570,7 @@ void *start_source_migration(void *param) {
 	}
 
 	logg << "-----> IO context transfer completed" << endl;
+	int_console.print_string("-----> IO context transfer completed\n");
 
 	// 6) Send commit message
 	if(send_commit_migr_message(cl_sock) < 0) {
@@ -580,10 +590,11 @@ void *start_source_migration(void *param) {
 
 	// se ok ferma la macchina corrente e chiudi il VMM
 	logg << "-----> migration complete." << endl;
+	int_console.print_string("-----> migration complete.\n");
 
 	pthread_mutex_unlock(&big_lock);
 
-	return nullptr;
+	return;
 }
 
 void start_destination_migration() {
@@ -700,10 +711,9 @@ void start_destination_migration() {
 	cout << "<----- Starting VM" << endl;
 }
 
-void initInternalConsole(int vm_fd) {
-	pthread_create(&internal_console_thread, NULL, &start_source_migration, (void*)&vm_fd);
+int get_vm_fd() {
+	return global_vm_fd;
 }
-
 
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 int main(int argc, char **argv)
@@ -786,6 +796,8 @@ int main(int argc, char **argv)
 		cout << "create vm: " << strerror(errno) << endl;
 		return 5;
 	}
+
+	global_vm_fd = vm_fd;
 
 	/* initially, the vm has no resources: no memory, no cpus.
 	 * Here we add the (guest) physical memory, using the
@@ -910,7 +922,7 @@ int main(int argc, char **argv)
 	// now we can initialize IO devices structures for emulation
 	initIO();
 
-	initInternalConsole(vm_fd);
+	int_console.start_thread();
 
 	/* we are finally ready to start the machine, by issuing
 	 * the KVM_RUN ioctl() on the vcpu_fd. While the machine
