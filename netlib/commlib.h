@@ -40,10 +40,9 @@ public:
 		if(field >= count)
 			return false;
 
-		data[field] = new uint8_t(field_size);
-		memcpy(data[field], field_data, field_size);
-
 		size[field] = field_size;
+		data[field] = new uint8_t[field_size];
+		memcpy(data[field], field_data, field_size);
 
 		return true;
 	}
