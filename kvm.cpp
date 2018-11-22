@@ -22,6 +22,7 @@
 #include "netlib/migration.h"
 #include "netlib/commlib.h"
 #include "backend/InternalConsole.h"
+#include "frontend/CPU.h"
 #include "INIReader.h"
 
 #include "gdbserver/gdbserver.h"
@@ -56,8 +57,6 @@ unsigned char *guest_physical_memory = NULL;
 int global_vm_fd;
 // kvm_run structure
 kvm_run *kr;
-// vcpu can be interrupted while KVM_EXIT, this is to avoid to re-enter KVM_RUN
-int pending_stop = false;
 
 // main thread
 pthread_t main_thread;
@@ -71,6 +70,9 @@ bool debug_mode;
 //    UNLOCKED when VM is RUNNING
 //    LOCKED when VM IS NOT RUNNING (during KVM_EXIT)
 pthread_mutex_t big_lock;
+
+// emulated cpu (dummy class)
+CPU *cpu;
 
 // global logger
 ConsoleLog& logg = *ConsoleLog::getInstance();
@@ -518,7 +520,7 @@ void start_source_migration(int vm_fd) {
 
 	// send memory end
 	if(send_memory_end_migr_message(cl_sock) < 0) {
-		cout << "start_source_migration: memory dump end message error" << endl;
+		logg << "start_source_migration: memory dump end message error" << endl;
 		pthread_mutex_unlock(&big_lock);
 		return;
 	}
@@ -526,11 +528,11 @@ void start_source_migration(int vm_fd) {
 	// wait for continue
 	size = wait_for_message(cl_sock, TYPE_CONTINUE_MIGRATION, buff);
 	if(size == -1) {
-		cout << "start_source_migration: unexpected message TYPE" << endl;
+		logg << "start_source_migration: unexpected message TYPE" << endl;
 		pthread_mutex_unlock(&big_lock);
 		exit(1);
 	} else if(size < 0) {
-		cout << "start_source_migration: receive error" << endl;
+		logg << "start_source_migration: receive error" << endl;
 		pthread_mutex_unlock(&big_lock);
 		exit(1);
 	}
@@ -539,13 +541,22 @@ void start_source_migration(int vm_fd) {
 	int_console.print_string("-----> diff dirty page transfer completed\n");
 
 	// 4) send CPU context
+	netfields *nfields_cpu;
+	cpu->field_serialize(nfields_cpu);
+	if(send_field_message(cl_sock, TYPE_DATA_CPU_CONTEXT, 0, *nfields_cpu) < 0) {
+		logg << "start_source_migration: send_field_message send error" << endl;
+		exit(1);
+	}
+	//nfields_cpu->dealloc_fields();
+	delete nfields_cpu;
+
 	// wait for continue
 	size = wait_for_message(cl_sock, TYPE_CONTINUE_MIGRATION, buff);
 	if(size == -1) {
-		cout << "start_source_migration: unexpected message TYPE" << endl;
+		logg << "start_source_migration: unexpected message TYPE" << endl;
 		exit(1);
 	} else if(size < 0) {
-		cout << "start_source_migration: receive error" << endl;
+		logg << "start_source_migration: receive error" << endl;
 		exit(1);
 	}
 
@@ -557,7 +568,7 @@ void start_source_migration(int vm_fd) {
 	netfields *nfields_keyboard;
 	keyb.field_serialize(nfields_keyboard);
 	if(send_field_message(cl_sock, TYPE_DATA_IO_CONTEXT, IO_TYPE_KEYBOARD, *nfields_keyboard) < 0) {
-		cout << "start_source_migration: send_field_message send error" << endl;
+		logg << "start_source_migration: send_field_message send error" << endl;
 		exit(1);
 	}
 	nfields_keyboard->dealloc_fields();
@@ -567,7 +578,7 @@ void start_source_migration(int vm_fd) {
 	netfields *nfields_vga;
 	vga.field_serialize(nfields_vga);
 	if(send_field_message(cl_sock, TYPE_DATA_IO_CONTEXT, IO_TYPE_VGACONTROLLER, *nfields_vga) < 0) {
-		cout << "start_source_migration: send_field_message send error" << endl;
+		logg << "start_source_migration: send_field_message send error" << endl;
 		exit(1);
 	}
 	nfields_vga->dealloc_fields();
@@ -577,10 +588,10 @@ void start_source_migration(int vm_fd) {
 	// wait for continue
 	size = wait_for_message(cl_sock, TYPE_CONTINUE_MIGRATION, buff);
 	if(size == -1) {
-		cout << "start_source_migration: unexpected message TYPE" << endl;
+		logg << "start_source_migration: unexpected message TYPE" << endl;
 		exit(1);
 	} else if(size < 0) {
-		cout << "start_source_migration: receive error" << endl;
+		logg << "start_source_migration: receive error" << endl;
 		exit(1);
 	}
 
@@ -589,17 +600,17 @@ void start_source_migration(int vm_fd) {
 
 	// 6) Send commit message
 	if(send_commit_migr_message(cl_sock) < 0) {
-		cout << "start_source_migration: send commit migration error" << endl;
+		logg << "start_source_migration: send commit migration error" << endl;
 		exit(1);
 	}
 
 	// wait for continue
 	size = wait_for_message(cl_sock, TYPE_CONTINUE_MIGRATION, buff);
 	if(size == -1) {
-		cout << "start_source_migration: unexpected message TYPE" << endl;
+		logg << "start_source_migration: unexpected message TYPE" << endl;
 		exit(1);
 	} else if(size < 0) {
-		cout << "start_source_migration: receive error" << endl;
+		logg << "start_source_migration: receive error" << endl;
 		exit(1);
 	}
 
@@ -682,6 +693,17 @@ void start_destination_migration() {
 	}
 
 	// 4) Wait for CPU Context
+	cpu = new CPU(0);
+	uint8_t subtype;
+	netfields *nfields_cpu;
+	if(recv_field_message(cl_sock, type, subtype, nfields_cpu) < 0 || type != TYPE_DATA_CPU_CONTEXT) {
+		cout << "start_destination_migration: nfields_cpu receive error" << endl;
+		exit(1);
+	}
+	cpu->field_deserialize(*nfields_cpu);
+	delete nfields_cpu;
+
+	// send continue
 	if(send_continue_migr_message(cl_sock) < 0)  {
 		cout << "start_destination_migration: continue migration receive error" << endl;
 		exit(1);
@@ -689,8 +711,6 @@ void start_destination_migration() {
 	cout << "<----- got CPU context" << endl;
 
 	// 5) Wait for IO Context
-	uint8_t subtype;
-
 	// IO_TYPE_KEYBOARD
 	netfields *nfields_keyboard;
 	if(recv_field_message(cl_sock, type, subtype, nfields_keyboard) < 0 || type != TYPE_DATA_IO_CONTEXT || subtype != IO_TYPE_KEYBOARD) {
@@ -734,7 +754,7 @@ int get_vm_fd() {
 
 void handler_sigusr1(int signal) {
 	logg << "handler_sigusr1: setting pending_stop" << endl;
-	pending_stop = true;
+	cpu->pending_stop = true;
 	//kr->immediate_exit = 1;
 }
 
@@ -873,6 +893,8 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	cpu = new CPU(vcpu_fd);
+
 	// start debug server if enabled
 	if( reader.GetBoolean("debug-server", "enable", false) ) {
 		try {
@@ -989,7 +1011,7 @@ int main(int argc, char **argv)
 	while(continue_run)
 	{
 		// cpu can be stopped due to receiving SIGUSR1 signal while KVM_EXIT
-		if(pending_stop) {
+		if(cpu->pending_stop) {
 			logg << "run: not entering due to pending_stop while KVM_EXIT" << endl;
 			//save cpu state
 			pthread_exit(0);
@@ -999,10 +1021,13 @@ int main(int argc, char **argv)
 		int kexit_res = ioctl(vcpu_fd, KVM_RUN, 0);
 		if (kexit_res < 0 && errno == EINTR) { 	// forced exit due to a signal while KVM_RUN
 			logg << "run: exited due to pending_stop while KVM_RUN" << endl;
-			//save cpu state
+			//save cpu state and exit
+			cpu->save_registers();
 			pthread_exit(0);
 		} else if (kexit_res < 0) {				// other exit reasons
 			logg << "run(" << kexit_res << "): " << strerror(errno) << endl;
+			//save cpu state and exit
+			cpu->save_registers();
 			return 1;
 		}
 
