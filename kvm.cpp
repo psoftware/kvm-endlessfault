@@ -115,9 +115,6 @@ void initIO()
 	console_in = ConsoleInput::getInstance();
 	console_in->attachKeyboard(&keyb);
 
-	// console input management thread
-	console_in->startEventThread();
-
 	// serial ports initialization
 	com1 = new serial_port(0x3f8, logg);
 	com2 = new serial_port(0x2f8, logg);
@@ -130,12 +127,17 @@ void initIO()
 	console_out = ConsoleOutput::getInstance();
 	console_out->attachVGA(&vga);
 
-	// start console output threads
-	console_out->startThread();
-
 	// handle ctrl+c termination in order to restore the console state
 	atexit([](){endIO(0);});
 	signal(SIGINT, endIO);
+}
+
+void startIO() {
+	// console input management thread
+	console_in->startEventThread();
+
+	// start console output threads
+	console_out->startThread();
 }
 
 
@@ -427,7 +429,7 @@ void start_source_migration(int vm_fd) {
 	{
 		pthread_mutex_lock(&big_lock);
 
-		if(send_memory_message(cl_sock, i, &guest_physical_memory[i*4096], PAGE_SIZE) < 0) {
+		if(send_memory_message(cl_sock, i, &guest_physical_memory[i*PAGE_SIZE], PAGE_SIZE) < 0) {
 			logg << "start_source_migration: cannot send memory page -> " << strerror(errno) << endl;
 			pthread_mutex_unlock(&big_lock);
 			return;
@@ -474,7 +476,7 @@ void start_source_migration(int vm_fd) {
 
 				pthread_mutex_lock(&big_lock);
 
-				if(send_memory_message(cl_sock, i, &guest_physical_memory[i*4096], PAGE_SIZE) < 0) {
+				if(send_memory_message(cl_sock, i, &guest_physical_memory[i*PAGE_SIZE], PAGE_SIZE) < 0) {
 					logg << "start_source_migration: cannot send memory page -> " << strerror(errno) << endl;
 					pthread_mutex_unlock(&big_lock);
 					return;
@@ -693,7 +695,6 @@ void start_destination_migration() {
 	}
 
 	// 4) Wait for CPU Context
-	cpu = new CPU(0);
 	uint8_t subtype;
 	netfields *nfields_cpu;
 	if(recv_field_message(cl_sock, type, subtype, nfields_cpu) < 0 || type != TYPE_DATA_CPU_CONTEXT) {
@@ -701,6 +702,7 @@ void start_destination_migration() {
 		exit(1);
 	}
 	cpu->field_deserialize(*nfields_cpu);
+	cpu->load_registers();
 	delete nfields_cpu;
 
 	// send continue
@@ -766,26 +768,34 @@ int main(int argc, char **argv)
 	uint32_t mem_size;
 	uint16_t serv_port;
 
+	bool is_migrating = false;
+
 	// check input parameters
-	if(argc != 2 && (argc ==1 || argc == 3 || (argc == 4 && strcmp(argv[2], "-logfile"))) ) {
+	if(argc == 2 && !strcmp(argv[1], "-migr"))
+		is_migrating = true;
+	else if(argc != 2 && (argc ==1 || argc == 3 || (argc == 4 && strcmp(argv[2], "-logfile"))) ) {
 		cout << "Format not correct. Use: kvm <elf file> [-logfile filefifo]" << endl;
 		return 1;
 	}
 
-	// if a specified file to log into
-	if(argc == 4 && !strcmp(argv[2], "-logfile"))
-		logg.setFilePath(argv[3]);
-	else
-		logg.setFilePath("console.log");
+	logg.setFilePath("console.log");
 
-	// check path validity
-	char *elf_file_path = argv[1];
-	FILE *elf_file = fopen(elf_file_path, "r");
-	if(!elf_file) {
-		cout << "The selected executable does not exist" << endl;
-		return 1;
+	char *elf_file_path;
+	if(!is_migrating) {
+		// if a specified file to log into
+		if(argc == 4 && !strcmp(argv[2], "-logfile"))
+			logg.setFilePath(argv[3]);
+
+
+		// check path validity
+		elf_file_path = argv[1];
+		FILE *elf_file = fopen(elf_file_path, "r");
+		if(!elf_file) {
+			cout << "The selected executable does not exist" << endl;
+			return 1;
+		}
+		fclose(elf_file);
 	}
-	fclose(elf_file);
 
 	// load configuration file
 	INIReader reader("config.ini");
@@ -879,9 +889,6 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	// load elf file
-	uint64_t entry_point = estrai_segmento(elf_file_path, (void*)guest_physical_memory, GUEST_PHYSICAL_MEMORY_SIZE);
-
 	/* now we add a virtual cpu (vcpu) to our machine. We obtain yet
 	 * another open file descriptor, which we can use to
 	 * interact with the vcpu. Note that we can have several
@@ -969,31 +976,42 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	// Set up the long mode using Bootloader class
-	Bootloader bootloader(vcpu_fd,guest_physical_memory,GUEST_PHYSICAL_MEMORY_SIZE,entry_point,0x400000L);
-	bootloader.run_long_mode();
+	if(!is_migrating) {
+		// load elf file
+		uint64_t entry_point = estrai_segmento(elf_file_path, (void*)guest_physical_memory, GUEST_PHYSICAL_MEMORY_SIZE);
 
-	#ifdef DEBUG_LOG
-	dump_memory(0x200000, 512);
-	#endif
+		// Set up the long mode using Bootloader class
+		Bootloader bootloader(vcpu_fd,guest_physical_memory,GUEST_PHYSICAL_MEMORY_SIZE,entry_point,0x400000L);
+		bootloader.run_long_mode();
 
-	// ========== GDB Server ==========
-	if(debug_mode = reader.GetBoolean("gdb-server", "enable", false)) {
-		// enable kvm EXIT_DEBUG
-		kvm_enable_guest_debug(vcpu_fd, entry_point);
+		#ifdef DEBUG_LOG
+		dump_memory(0x200000, 512);
+		#endif
 
-		// refresh gdb cache registers
-		gdb_submit_registers(vcpu_fd);
+		// ========== GDB Server ==========
+		if(debug_mode = reader.GetBoolean("gdb-server", "enable", false)) {
+			// enable kvm EXIT_DEBUG
+			kvm_enable_guest_debug(vcpu_fd, entry_point);
 
-		// read parameters and start gdb server
-		std::string gdb_address = reader.Get("gdb-server", "address", "127.0.0.1");
-		unsigned short gdb_port = reader.GetInteger("gdb-server", "port", -1);
-		gdbserver_start(gdb_address.c_str(), gdb_port);
+			// refresh gdb cache registers
+			gdb_submit_registers(vcpu_fd);
+
+			// read parameters and start gdb server
+			std::string gdb_address = reader.Get("gdb-server", "address", "127.0.0.1");
+			unsigned short gdb_port = reader.GetInteger("gdb-server", "port", -1);
+			gdbserver_start(gdb_address.c_str(), gdb_port);
+		}
+		// =================================
 	}
-	// =================================
 
 	// now we can initialize IO devices structures for emulation
 	initIO();
+
+	if(is_migrating)
+		start_destination_migration();
+
+	// an then IO devices threads
+	startIO();
 
 	int_console.start_thread();
 
