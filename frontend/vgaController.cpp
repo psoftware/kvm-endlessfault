@@ -151,10 +151,10 @@ bool VGAController::field_deserialize(netfields &nfields) {
 	int f_id = 0;
 
 	// === Registers ===
-	nfields.set_field(f_id, &IND, sizeof(uint8_t)); f_id++;
-	nfields.set_field(f_id, &DAT, sizeof(uint8_t)); f_id++;
-	nfields.set_field(f_id, &CUR_HIGH, sizeof(uint8_t)); f_id++;
-	nfields.set_field(f_id, &CUR_LOW, sizeof(uint8_t)); f_id++;
+	nfields.get_field(f_id, &IND, sizeof(uint8_t)); f_id++;
+	nfields.get_field(f_id, &DAT, sizeof(uint8_t)); f_id++;
+	nfields.get_field(f_id, &CUR_HIGH, sizeof(uint8_t)); f_id++;
+	nfields.get_field(f_id, &CUR_LOW, sizeof(uint8_t)); f_id++;
 
 	return true;
 }
