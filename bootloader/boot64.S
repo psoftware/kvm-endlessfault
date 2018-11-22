@@ -19,7 +19,7 @@ _start:
 	wrmsr
 
 	movl %cr0, %eax
-	orl $0x80000000, %eax   //cr0.pg
+	orl $0x80000001, %eax   //cr0.pg|cr0.pe
 	movl %eax, %cr0
 	lgdt gdt64_ptr
 	ljmp $8, $long_mode
