@@ -25,8 +25,13 @@ InternalConsole::InternalConsole() {
 
 }
 
-InternalConsole InternalConsole::start_thread() {
+void InternalConsole::start_thread() {
 	pthread_create(&_thread, NULL, &InternalConsole::_mainThread, (void*)this);
+}
+
+void InternalConsole::stop_thread() {
+	close(current_cl_sock);
+	close(srv_sock);
 }
 
 bool InternalConsole::print_string(string str) {

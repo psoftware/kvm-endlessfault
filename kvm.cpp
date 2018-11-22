@@ -103,6 +103,9 @@ void endIO(int val)
 	console_out->resetConsole();
 	console_in->resetConsole();
 
+	//stop internal console server
+	int_console.stop_thread();
+
 	if( debug_serv != nullptr )
 		delete debug_serv;
 	// close the program
@@ -518,7 +521,7 @@ void start_source_migration(int vm_fd) {
 
 	pthread_mutex_lock(&big_lock);
 
-	delete (uint8_t*)dirty_log.dirty_bitmap;
+	delete[] (uint8_t*)dirty_log.dirty_bitmap;
 
 	// send memory end
 	if(send_memory_end_migr_message(cl_sock) < 0) {

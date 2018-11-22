@@ -13,7 +13,8 @@ class InternalConsole {
 	int current_cl_sock;
 public:
 	InternalConsole();
-	InternalConsole start_thread();
+	void start_thread();
+	void stop_thread();
 
 	bool print_string(string str);
 	bool print_string(const char* str);

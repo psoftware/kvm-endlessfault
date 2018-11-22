@@ -8,6 +8,8 @@ using namespace std;
 keyboard::keyboard() : RBR(0), TBR(0), STR(0), CMR(0), enabled(false), interrupt_enabled(false),
 	buffer_head_pointer(0), buffer_tail_pointer(0), buffer_element_count(0), interrupt_raised(false) {
 	pthread_mutex_init(&mutex, NULL);
+
+	memset(internal_buffer, 0, INTERNAL_BUFFER_SIZE);
 }
 
 void keyboard::write_reg_byte(io_addr addr, uint8_t val)
@@ -125,7 +127,7 @@ err:
 
 // for network serialization
 bool keyboard::field_serialize(netfields* &nfields) {
-	nfields = new netfields(12);
+	nfields = new netfields(11);
 	int f_id = 0;
 
 	// === Registers ===
@@ -155,7 +157,7 @@ bool keyboard::field_serialize(netfields* &nfields) {
 
 bool keyboard::field_deserialize(netfields &nfields) {
 	// Check expected fields
-	if(nfields.count != 12)
+	if(nfields.count != 11)
 		return false;
 
 	int f_id = 0;

@@ -4,6 +4,13 @@ using namespace std;
 
 CPU::CPU(int vcpu_fd) : pending_stop(false) {
 	this->vcpu_fd = vcpu_fd;
+
+	/*memset(&kregs, 0, sizeof(kregs));
+	memset(&ksregs, 0, sizeof(ksregs));
+	memset(&kmsrs, 0, sizeof(kmsrs));
+	memset(&kcpuevents, 0, sizeof(kcpuevents));*/
+
+	save_registers();
 }
 
 void CPU::save_registers() {
@@ -17,10 +24,10 @@ void CPU::save_registers() {
 		return;
 	}
 
-	if (ioctl(vcpu_fd, KVM_GET_MSRS, &kmsrs) < 0) {
+	/*if (ioctl(vcpu_fd, KVM_GET_MSRS, &kmsrs) < 0) {
 		logg << "CPU::save_registers KVM_GET_MSRS error: " << strerror(errno) << endl;
 		return;
-	}
+	}*/
 
 	if (ioctl(vcpu_fd, KVM_GET_VCPU_EVENTS, &kcpuevents) < 0) {
 		logg << "CPU::save_registers KVM_GET_VCPU_EVENTS error: " << strerror(errno) << endl;
@@ -51,13 +58,13 @@ void CPU::load_registers() {
 }
 
 bool CPU::field_serialize(netfields* &nfields) {
-	nfields = new netfields(2);
+	nfields = new netfields(3);
 	int f_id = 0;
 
 	// === Registers ===
 	nfields->set_field(f_id, (uint8_t*)(&kregs), sizeof(kregs)); f_id++;
 	nfields->set_field(f_id, (uint8_t*)(&ksregs), sizeof(ksregs)); f_id++;
-	nfields->set_field(f_id, (uint8_t*)(&kmsrs), sizeof(kmsrs)); f_id++;
+	//nfields->set_field(f_id, (uint8_t*)(&kmsrs), sizeof(kmsrs)); f_id++;
 	nfields->set_field(f_id, (uint8_t*)(&kcpuevents), sizeof(kcpuevents)); f_id++;
 
 	/*logg << "\tRIP: " << (void *)kregs.rip << endl;
@@ -84,16 +91,20 @@ bool CPU::field_serialize(netfields* &nfields) {
 
 bool CPU::field_deserialize(netfields &nfields) {
 	// Check expected fields
-	if(nfields.count != 2)
+	if(nfields.count != 3)
 		return false;
 
 	int f_id = 0;
 
 	// === Registers ===
-	nfields.get_field(f_id, (uint8_t*)(&kregs), sizeof(kregs)); f_id++;
-	nfields.get_field(f_id, (uint8_t*)(&ksregs), sizeof(ksregs)); f_id++;
-	nfields.get_field(f_id, (uint8_t*)(&kmsrs), sizeof(kmsrs)); f_id++;
-	nfields.get_field(f_id, (uint8_t*)(&kcpuevents), sizeof(kcpuevents)); f_id++;
+	if(!nfields.get_field(f_id, (uint8_t*)(&kregs), sizeof(kregs)))
+		return false; f_id++;
+	if(!nfields.get_field(f_id, (uint8_t*)(&ksregs), sizeof(ksregs)))
+		return false; f_id++;
+	/*if(!nfields.get_field(f_id, (uint8_t*)(&kmsrs), sizeof(kmsrs)))
+		return false; f_id++;*/
+	if(!nfields.get_field(f_id, (uint8_t*)(&kcpuevents), sizeof(kcpuevents)))
+		return false; f_id++;
 
 	/*logg << "\tRIP: " << (void *)kregs.rip << endl;
 	logg << "\tRSP: " << (void *)kregs.rsp << endl;

@@ -22,8 +22,9 @@ int send_commit_migr_message(int sock) {
 
 int send_memory_end_migr_message(int sock) {
 	netfields nfields(1);
-	nfields.data[0] = new uint8_t[1];
 	nfields.size[0] = 1;
+	nfields.data[0] = new uint8_t[1];
+	nfields.data[0][0] = 0;
 
 	return send_field_message(sock, TYPE_DATA_MEMORY_END, 0, nfields);
 }
