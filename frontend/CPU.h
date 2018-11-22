@@ -18,6 +18,8 @@ private:
 	int vcpu_fd;
 	kvm_regs kregs;
 	kvm_sregs ksregs;
+	kvm_msrs kmsrs;
+	kvm_vcpu_events kcpuevents;
 
 public:
 	// vcpu can be interrupted while KVM_EXIT, this is to avoid to re-enter KVM_RUN
@@ -26,6 +28,7 @@ public:
 	CPU(int vcpu_fd);
 
 	void save_registers();
+	void load_registers();
 	bool field_serialize(netfields* &nfields);
 	bool field_deserialize(netfields &nfields);
 };
