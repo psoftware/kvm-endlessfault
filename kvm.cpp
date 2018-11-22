@@ -502,6 +502,12 @@ void start_source_migration(int vm_fd) {
 				logg << "cannot perform migration: pthread_kill failed -> " << strerror(errno) << endl;
 				// send stop message
 			}
+
+			// wait while VMM saves the states.
+			void *join_res;
+			pthread_join(main_thread, &join_res);
+
+			// VM is now fully stopped.
 		}
 	}
 
@@ -602,6 +608,8 @@ void start_source_migration(int vm_fd) {
 	int_console.print_string("-----> migration complete.\n");
 
 	pthread_mutex_unlock(&big_lock);
+
+	exit(0);
 
 	return;
 }
