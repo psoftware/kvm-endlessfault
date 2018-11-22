@@ -34,7 +34,7 @@ int send_memory_message(int sock, uint32_t page_num, uint8_t *memory_page, uint3
 	nfields.size[0] = page_size;
 	nfields.set_field(1, (uint8_t*)&page_num, sizeof(page_num));
 
-	return send_field_message(sock, TYPE_DATA_MEMORY, page_num, nfields);
+	return send_field_message(sock, TYPE_DATA_MEMORY, 0, nfields);
 }
 
 int receive_memory_message(int sock, uint32_t &page_num, uint8_t* &memory_page, uint8_t &type) {
@@ -51,6 +51,8 @@ int receive_memory_message(int sock, uint32_t &page_num, uint8_t* &memory_page, 
 		return -1;
 
 	page_num = subtype;
+	nfields->get_field(1, (uint8_t*)&page_num, sizeof(page_num));
+
 	memory_page = nfields->data[0];
 	printf("received nfields->data = %p\n", nfields->data[0]);
 
