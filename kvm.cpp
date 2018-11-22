@@ -54,6 +54,10 @@ unsigned char *guest_physical_memory = NULL;
 
 // kvm vm_fd
 int global_vm_fd;
+// kvm_run structure
+kvm_run *kr;
+// vcpu can be interrupted while KVM_EXIT, this is to avoid to re-enter KVM_RUN
+int pending_stop = false;
 
 // main thread
 pthread_t main_thread;
@@ -493,6 +497,11 @@ void start_source_migration(int vm_fd) {
 			// all the dirty pages are sent to the other VMM instance
 			remaining_cycles = 1;
 			// STOP VM NOW
+			if(pthread_kill(main_thread, SIGUSR1) < 0)
+			{
+				logg << "cannot perform migration: pthread_kill failed -> " << strerror(errno) << endl;
+				// send stop message
+			}
 		}
 	}
 
@@ -715,6 +724,12 @@ int get_vm_fd() {
 	return global_vm_fd;
 }
 
+void handler_sigusr1(int signal) {
+	logg << "handler_sigusr1: setting pending_stop" << endl;
+	pending_stop = true;
+	//kr->immediate_exit = 1;
+}
+
 extern uint64_t estrai_segmento(char *fname, void *dest, uint64_t dest_size);
 int main(int argc, char **argv)
 {
@@ -876,7 +891,7 @@ int main(int argc, char **argv)
 	}
 
 	/* and now the mmap() */
-	kvm_run *kr = static_cast<kvm_run *>(mmap(
+	kr = static_cast<kvm_run *>(mmap(
 			/* let the kernel  choose the address */
 			NULL,
 			/* the size we obtained above */
@@ -897,6 +912,34 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	// Check capability
+	/*if(!ioctl(kvm_fd, KVM_CHECK_EXTENSION, KVM_CAP_IMMEDIATE_EXIT))
+		logg << "KVM_CAP_IMMEDIATE_EXIT not supported!" << endl;*/
+
+
+	// Set an handler for SIGUSR1 (force kvm_run exit)
+	sigset_t set;
+
+	struct sigaction sigact;
+	memset(&sigact, 0, sizeof(sigact));
+	sigact.sa_handler = handler_sigusr1;
+	sigaction(SIGUSR1, &sigact, NULL);
+
+	pthread_sigmask(SIG_BLOCK, NULL, &set);
+
+	// KVM_RUN must exit when any signal is received
+	sigdelset(&set, SIGUSR1);
+
+	kvm_signal_mask ksigmask;
+	ksigmask.len = 8;
+	memcpy(ksigmask.sigset, &set, sizeof(set));
+
+	if (ioctl(vcpu_fd, KVM_SET_SIGNAL_MASK, &ksigmask) < 0) {
+		logg << "KVM_SET_SIGNAL_MASK failed: " << strerror(errno) << endl;
+		return 1;
+	}
+
+	// Set up the long mode using Bootloader class
 	Bootloader bootloader(vcpu_fd,guest_physical_memory,GUEST_PHYSICAL_MEMORY_SIZE,entry_point,0x400000L);
 	bootloader.run_long_mode();
 
@@ -937,8 +980,21 @@ int main(int argc, char **argv)
 	bool continue_run = true;
 	while(continue_run)
 	{
-		if (ioctl(vcpu_fd, KVM_RUN, 0) < 0) {
-			logg << "run: " << strerror(errno) << endl;
+		// cpu can be stopped due to receiving SIGUSR1 signal while KVM_EXIT
+		if(pending_stop) {
+			logg << "run: not entering due to pending_stop while KVM_EXIT" << endl;
+			//save cpu state
+			pthread_exit(0);
+		}
+
+		// go with KVM_RUN
+		int kexit_res = ioctl(vcpu_fd, KVM_RUN, 0);
+		if (kexit_res < 0 && errno == EINTR) { 	// forced exit due to a signal while KVM_RUN
+			logg << "run: exited due to pending_stop while KVM_RUN" << endl;
+			//save cpu state
+			pthread_exit(0);
+		} else if (kexit_res < 0) {				// other exit reasons
+			logg << "run(" << kexit_res << "): " << strerror(errno) << endl;
 			return 1;
 		}
 

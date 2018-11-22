@@ -13,6 +13,8 @@
 #include <errno.h>
 #include <cstdint>
 
+#include <signal.h>
+
 #include "../kvm.h"
 #include "InternalConsole.h"
 
@@ -60,6 +62,15 @@ bool InternalConsole::process_command(const char *str_in, char *str_out) {
 
 void* InternalConsole::_mainThread(void *param) {
 	InternalConsole *This = (InternalConsole*)param;
+
+	// Let main kvm thread to manage signals
+	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set, SIGTERM);
+	sigaddset(&set, SIGHUP);
+	sigaddset(&set, SIGINT);
+	sigaddset(&set, SIGUSR1);
+	pthread_sigmask(SIG_BLOCK, &set, NULL);
 
 	This->srv_sock = tcp_start_server("0.0.0.0", 9000);
 	if(This->srv_sock < 0)
