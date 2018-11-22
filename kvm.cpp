@@ -469,7 +469,7 @@ void start_source_migration(int vm_fd) {
 		// for each modified page...
 		for(uint64_t i=0; i<GUEST_PHYSICAL_MEMORY_SIZE/PAGE_SIZE; i++)
 		{
-			if(dirty_bitmap[bitmap_offset*(sizeof(bitmap_offset)*8)] & bit_mask)
+			if(dirty_bitmap[bitmap_offset] & bit_mask)
 			{
 				logg << "page " << i << " is dirty!" << endl;
 				no_more_pages = false; // cycle must go on
