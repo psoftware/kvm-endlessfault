@@ -635,11 +635,11 @@ void start_destination_migration() {
 	int cl_sock = tcp_accept_client(srv_sock);
 
 	if(cl_sock < 0){
-		cout << "start_destination_migration: cannot accept client" << endl;
+		logg << "start_destination_migration: cannot accept client" << endl;
 		exit(1);
 	}
 
-	cout << "client connected" << endl;
+	logg << "client connected" << endl;
 
 	uint8_t *buff;
 	uint32_t size;
@@ -648,14 +648,14 @@ void start_destination_migration() {
 	// 1) Wait for migration start message
 	size = wait_for_message(cl_sock, TYPE_START_MIGRATION, buff);
 	if(size == -1) {
-		cout << "start_destination_migration: unexpected message TYPE" << endl;
+		logg << "start_destination_migration: unexpected message TYPE" << endl;
 		exit(1);
 	} else if(size < 0) {
-		cout << "start_destination_migration: start migration receive error" << endl;
+		logg << "start_destination_migration: start migration receive error" << endl;
 		exit(1);
 	}
 
-	cout << "<----- migration start" << endl;
+	logg << "<----- migration start" << endl;
 
 	// send continue
 	send_continue_migr_message(cl_sock);
@@ -668,14 +668,14 @@ void start_destination_migration() {
 		// get next page
 		size = receive_memory_message(cl_sock, page_num, page_data, type);
 		if(size < 0) {
-			cout << "start_destination_migration: memory page receive error" << endl;
+			logg << "start_destination_migration: memory page receive error" << endl;
 			exit(1);
 		}
 
 		if(type != TYPE_DATA_MEMORY)
 			break;
 
-		cout << "page_num = " << page_num << " addr = " << (void*)page_data << "guest_addr = " << (void*)guest_physical_memory << endl;
+		logg << "page_num = " << page_num << " addr = " << (void*)page_data << "guest_addr = " << (void*)guest_physical_memory << endl;
 
 		// write page
 		memcpy(&guest_physical_memory[page_num*PAGE_SIZE], (void*)page_data, PAGE_SIZE);
@@ -684,16 +684,16 @@ void start_destination_migration() {
 		delete[] page_data;
 	}
 
-	cout << "<----- got memory" << endl;
+	logg << "<----- got memory" << endl;
 
 	if(type != TYPE_DATA_MEMORY_END) {
-		cout << "start_destination_migration: unexpected message TYPE, expecting TYPE_DATA_MEMORY_END" << endl;
+		logg << "start_destination_migration: unexpected message TYPE, expecting TYPE_DATA_MEMORY_END" << endl;
 		exit(1);
 	}
 
 	// send continue
 	if(send_continue_migr_message(cl_sock) < 0)  {
-		cout << "start_destination_migration: continue migration receive error" << endl;
+		logg << "start_destination_migration: continue migration receive error" << endl;
 		exit(1);
 	}
 
@@ -701,25 +701,28 @@ void start_destination_migration() {
 	uint8_t subtype;
 	netfields *nfields_cpu;
 	if(recv_field_message(cl_sock, type, subtype, nfields_cpu) < 0 || type != TYPE_DATA_CPU_CONTEXT) {
-		cout << "start_destination_migration: nfields_cpu receive error" << endl;
+		logg << "start_destination_migration: nfields_cpu receive error" << endl;
 		exit(1);
 	}
-	cpu->field_deserialize(*nfields_cpu);
+	if(!cpu->field_deserialize(*nfields_cpu)) {
+		logg << "start_destination_migration: cpu deserialize fail" << endl;
+		exit(1);
+	}
 	cpu->load_registers();
 	delete nfields_cpu;
 
 	// send continue
 	if(send_continue_migr_message(cl_sock) < 0)  {
-		cout << "start_destination_migration: continue migration receive error" << endl;
+		logg << "start_destination_migration: continue migration receive error" << endl;
 		exit(1);
 	}
-	cout << "<----- got CPU context" << endl;
+	logg << "<----- got CPU context" << endl;
 
 	// 5) Wait for IO Context
 	// IO_TYPE_KEYBOARD
 	netfields *nfields_keyboard;
 	if(recv_field_message(cl_sock, type, subtype, nfields_keyboard) < 0 || type != TYPE_DATA_IO_CONTEXT || subtype != IO_TYPE_KEYBOARD) {
-		cout << "start_destination_migration: nfields_keyboard receive error" << endl;
+		logg << "start_destination_migration: nfields_keyboard receive error" << endl;
 		exit(1);
 	}
 	keyb.field_deserialize(*nfields_keyboard);
@@ -728,7 +731,7 @@ void start_destination_migration() {
 	// IO_TYPE_VGACONTROLLER
 	netfields *nfields_vga;
 	if(recv_field_message(cl_sock, type, subtype, nfields_vga) < 0 || type != TYPE_DATA_IO_CONTEXT || subtype != IO_TYPE_VGACONTROLLER) {
-		cout << "start_destination_migration: nfields_vga receive error" << endl;
+		logg << "start_destination_migration: nfields_vga receive error" << endl;
 		exit(1);
 	}
 	vga.field_deserialize(*nfields_vga);
@@ -736,21 +739,21 @@ void start_destination_migration() {
 
 	// send continue
 	if(send_continue_migr_message(cl_sock) < 0)  {
-		cout << "start_destination_migration: continue migration receive error" << endl;
+		logg << "start_destination_migration: continue migration receive error" << endl;
 		exit(1);
 	}
-	cout << "<----- got IO context" << endl;
+	logg << "<----- got IO context" << endl;
 
 	// 6) Wait for Commit
 	size = wait_for_message(cl_sock, TYPE_COMMIT_MIGRATION, buff);
 
-	cout << "<----- got Commit" << endl;
+	logg << "<----- got Commit" << endl;
 
 	// send continue
 	send_continue_migr_message(cl_sock);
 
 	// start VM...
-	cout << "<----- Starting VM" << endl;
+	logg << "<----- Starting VM" << endl;
 }
 
 int get_vm_fd() {

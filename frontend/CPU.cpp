@@ -46,10 +46,10 @@ void CPU::load_registers() {
 		return;
 	}
 
-	if (ioctl(vcpu_fd, KVM_SET_MSRS, &kmsrs) < 0) {
+	/*if (ioctl(vcpu_fd, KVM_SET_MSRS, &kmsrs) < 0) {
 		logg << "CPU::load_registers KVM_SET_MSRS error: " << strerror(errno) << endl;
 		return;
-	}
+	}*/
 
 	if (ioctl(vcpu_fd, KVM_SET_VCPU_EVENTS, &kcpuevents) < 0) {
 		logg << "CPU::load_registers KVM_GET_VCPU_EVENTS error: " << strerror(errno) << endl;
