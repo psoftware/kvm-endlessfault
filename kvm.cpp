@@ -1064,7 +1064,9 @@ int main(int argc, char **argv)
 		// cpu can be stopped due to receiving SIGUSR1 signal while KVM_EXIT
 		if(cpu->pending_stop) {
 			logg << "run: not entering due to pending_stop while KVM_EXIT" << endl;
-			//save cpu state
+			//save cpu state and exit
+			cpu->save_registers();
+			trace_user_program(vcpu_fd, kr);
 			pthread_exit(0);
 		}
 
@@ -1077,8 +1079,7 @@ int main(int argc, char **argv)
 			pthread_exit(0);
 		} else if (kexit_res < 0) {				// other exit reasons
 			logg << "run(" << kexit_res << "): " << strerror(errno) << endl;
-			//save cpu state and exit
-			cpu->save_registers();
+			trace_user_program(vcpu_fd, kr);
 			return 1;
 		}
 
