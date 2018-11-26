@@ -91,7 +91,7 @@ int recv_variable_message(int cl_sock, uint8_t* &buff, uint8_t &type)
 	bytes_count=ntohl(bytes_count);
 
 	if(bytes_count == 0) {
-		printf("empty message\n");
+		//printf("empty message\n");
 		return bytes_count;
 	}
 
@@ -104,7 +104,7 @@ int recv_variable_message(int cl_sock, uint8_t* &buff, uint8_t &type)
 		return ret;
 	if(ret < bytes_count)
 	{
-		printf("recv_variable_string: Byte ricevuti (%d) minori di quelli previsti!\n", ret);
+		printf("recv_variable_message: Received (%d) less bytes then expected!\n", ret);
 		return -1;
 	}
 
@@ -184,7 +184,7 @@ int recv_field_message(int cl_sock, uint8_t &type, uint8_t &subtype, netfields* 
 		ret = recv(cl_sock, (void*)nfields->data[field], nfields->size[field], MSG_WAITALL);
 		if(ret < field_len)
 		{
-			printf("recv_variable_string: Byte ricevuti (%d) minori di quelli previsti!\n", ret);
+			printf("recv_field_message: Received (%d) less bytes then expected!\n", ret);
 			return -1;
 		}
 
@@ -229,7 +229,7 @@ int send_field_message(int cl_sock, uint8_t type, uint8_t subtype, const netfiel
 			return ret;
 		if(ret < (int)nfields.size[field])
 		{
-			printf("send_variable_message: Received (%d) less bytes then sent ones!\n", ret);
+			printf("send_field_message: Sent (%d) less bytes then sent ones!\n", ret);
 			return -1;
 		}
 	}

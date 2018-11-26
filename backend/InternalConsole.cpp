@@ -50,8 +50,6 @@ bool InternalConsole::print_string(const char* str) {
 }
 
 bool InternalConsole::process_command(const char *str_in, char *str_out) {
-	cout << "vm console> " << std::flush;
-
 	if(!strcmp(str_in, "exit"))
 		return false;
 	else if(!strcmp(str_in, "migrate"))

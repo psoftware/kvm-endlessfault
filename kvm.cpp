@@ -1047,6 +1047,7 @@ int main(int argc, char **argv)
 	initIO();
 
 	if(is_migrating) {
+		cout << "Waiting for network migration connections..." << endl;
 		start_destination_migration();
 		#ifdef DEBUG_LOG_MIGR
 		trace_user_program(vcpu_fd, kr);
