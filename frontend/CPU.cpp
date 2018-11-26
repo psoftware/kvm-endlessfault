@@ -64,7 +64,7 @@ bool CPU::field_serialize(netfields* &nfields) {
 	// === Registers ===
 	nfields->set_field(f_id, (uint8_t*)(&kregs), sizeof(kregs)); f_id++;
 	nfields->set_field(f_id, (uint8_t*)(&ksregs), sizeof(ksregs)); f_id++;
-	//nfields->set_field(f_id, (uint8_t*)(&kmsrs), sizeof(kmsrs)); f_id++;
+	//nfields->set_field(f_id, (uint8_t*)(&kmsrs), sizeof(ksregs) + kmsrs.nmsrs*sizeof(kvm_msr_entry)); f_id++;
 	nfields->set_field(f_id, (uint8_t*)(&kcpuevents), sizeof(kcpuevents)); f_id++;
 
 	/*logg << "\tRIP: " << (void *)kregs.rip << endl;
@@ -101,7 +101,7 @@ bool CPU::field_deserialize(netfields &nfields) {
 		return false; f_id++;
 	if(!nfields.get_field(f_id, (uint8_t*)(&ksregs), sizeof(ksregs)))
 		return false; f_id++;
-	/*if(!nfields.get_field(f_id, (uint8_t*)(&kmsrs), sizeof(kmsrs)))
+	/*if(!nfields.get_field(f_id, (uint8_t*)(&kmsrs), sizeof(ksregs) + kmsrs.nmsrs*sizeof(kvm_msr_entry)))
 		return false; f_id++;*/
 	if(!nfields.get_field(f_id, (uint8_t*)(&kcpuevents), sizeof(kcpuevents)))
 		return false; f_id++;
