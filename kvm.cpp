@@ -1040,8 +1040,12 @@ int main(int argc, char **argv)
 	// now we can initialize IO devices structures for emulation
 	initIO();
 
-	if(is_migrating)
+	if(is_migrating) {
 		start_destination_migration();
+		#ifdef DEBUG_LOG_MIGR
+		trace_user_program(vcpu_fd, kr);
+		#endif
+	}
 
 	// an then IO devices threads
 	startIO();
@@ -1066,7 +1070,9 @@ int main(int argc, char **argv)
 			logg << "run: not entering due to pending_stop while KVM_EXIT" << endl;
 			//save cpu state and exit
 			cpu->save_registers();
+			#ifdef DEBUG_LOG_MIGR
 			trace_user_program(vcpu_fd, kr);
+			#endif
 			pthread_exit(0);
 		}
 
@@ -1076,6 +1082,9 @@ int main(int argc, char **argv)
 			logg << "run: exited due to pending_stop while KVM_RUN" << endl;
 			//save cpu state and exit
 			cpu->save_registers();
+			#ifdef DEBUG_LOG_MIGR
+			trace_user_program(vcpu_fd, kr);
+			#endif
 			pthread_exit(0);
 		} else if (kexit_res < 0) {				// other exit reasons
 			logg << "run(" << kexit_res << "): " << strerror(errno) << endl;
