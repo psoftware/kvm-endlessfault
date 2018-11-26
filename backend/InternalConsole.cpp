@@ -21,8 +21,8 @@
 using namespace std;
 
 
-InternalConsole::InternalConsole() {
-
+InternalConsole::InternalConsole(uint16_t port) {
+	this->port = port;
 }
 
 void InternalConsole::start_thread() {
@@ -75,7 +75,7 @@ void* InternalConsole::_mainThread(void *param) {
 	sigaddset(&set, SIGUSR1);
 	pthread_sigmask(SIG_BLOCK, &set, NULL);
 
-	This->srv_sock = tcp_start_server("0.0.0.0", 9000);
+	This->srv_sock = tcp_start_server("0.0.0.0", This->port);
 	if(This->srv_sock < 0)
 		return NULL;
 

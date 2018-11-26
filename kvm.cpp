@@ -90,7 +90,7 @@ serial_port* com4 = nullptr;
 ConsoleInput* console_in;
 
 // internal console
-InternalConsole int_console;
+InternalConsole* int_console;
 
 //text mode video memory emulation  
 ConsoleOutput* console_out = nullptr;
@@ -104,7 +104,7 @@ void endIO(int val)
 	console_in->resetConsole();
 
 	//stop internal console server
-	int_console.stop_thread();
+	int_console->stop_thread();
 
 	if( debug_serv != nullptr )
 		delete debug_serv;
@@ -405,7 +405,7 @@ void start_source_migration(int vm_fd) {
 	if(cl_sock < 0)
 	{
 		logg << "start_source_migration: cannot connect to migration destination" << endl;
-		int_console.print_string("cannot connect to migration destination\n");
+		int_console->print_string("cannot connect to migration destination\n");
 		return;
 	}
 
@@ -426,7 +426,7 @@ void start_source_migration(int vm_fd) {
 	}
 
 	logg << "-----> starting migration" << endl;
-	int_console.print_string("-----> starting migration\n");
+	int_console->print_string("-----> starting migration\n");
 
 	// 2) Send all pages at once
 	for(unsigned int i=0; i<GUEST_PHYSICAL_MEMORY_SIZE/PAGE_SIZE; i++)
@@ -443,7 +443,7 @@ void start_source_migration(int vm_fd) {
 	}
 
 	logg << "-----> first memory transfer completed" << endl;
-	int_console.print_string("-----> first memory transfer completed\n");
+	int_console->print_string("-----> first memory transfer completed\n");
 
 	// 3) Start dirty page logging
 	if(kvm_start_dirty_pages_logging(vm_fd) < 0)
@@ -501,11 +501,11 @@ void start_source_migration(int vm_fd) {
 
 		// if there are no more dirty pages and we are not at the last cycle (to avoid infinite cycle)
 		if(no_more_pages && remaining_cycles != 0) {
-			int_console.print_string("stopping with ");
+			int_console->print_string("stopping with ");
 			char int_str[12];
 			sprintf(int_str, "%u", remaining_cycles);
-			int_console.print_string(int_str);
-			int_console.print_string(" remaining cycles\n");
+			int_console->print_string(int_str);
+			int_console->print_string(" remaining cycles\n");
 			// we need just another cycle after stopping VM to be sure that
 			// all the dirty pages are sent to the other VMM instance
 			remaining_cycles = 1;
@@ -549,7 +549,7 @@ void start_source_migration(int vm_fd) {
 	}
 
 	logg << "-----> diff dirty page transfer completed" << endl;
-	int_console.print_string("-----> diff dirty page transfer completed\n");
+	int_console->print_string("-----> diff dirty page transfer completed\n");
 
 	// 4) send CPU context
 	netfields *nfields_cpu;
@@ -572,7 +572,7 @@ void start_source_migration(int vm_fd) {
 	}
 
 	logg << "-----> CPU context transfer completed" << endl;
-	int_console.print_string("-----> CPU context transfer completed\n");
+	int_console->print_string("-----> CPU context transfer completed\n");
 
 	// 5) send IO context
 	// IO_TYPE_KEYBOARD
@@ -607,7 +607,7 @@ void start_source_migration(int vm_fd) {
 	}
 
 	logg << "-----> IO context transfer completed" << endl;
-	int_console.print_string("-----> IO context transfer completed\n");
+	int_console->print_string("-----> IO context transfer completed\n");
 
 	// 6) Send commit message
 	if(send_commit_migr_message(cl_sock) < 0) {
@@ -627,7 +627,7 @@ void start_source_migration(int vm_fd) {
 
 	// se ok ferma la macchina corrente e chiudi il VMM
 	logg << "-----> migration complete." << endl;
-	int_console.print_string("-----> migration complete.\n");
+	int_console->print_string("-----> migration complete.\n");
 
 	pthread_mutex_unlock(&big_lock);
 
@@ -786,6 +786,7 @@ int main(int argc, char **argv)
 	char default_log_file[] = "console.log";
 	char *log_file = default_log_file;
 	char *elf_file_path = nullptr;
+	uint16_t console_port = 9000;
 
 	for(int i=1; i<argc; i++) {
 		if(!strcmp(argv[i], "-logfile")) {
@@ -801,6 +802,13 @@ int main(int argc, char **argv)
 				exit(1);
 			}
 			is_migrating = true;
+		}
+		else if(!strcmp(argv[i], "-consoleport")) {
+			if(i+1 >= argc) {
+				cout << "Incorrect Format. Use: kvm <elf file> [-logfile filefifo, -migr]" << endl;
+				exit(1);
+			}
+			console_port = (uint16_t)atoi(argv[++i]);
 		}
 		else {
 			if(elf_file_path != nullptr) {
@@ -1057,7 +1065,8 @@ int main(int argc, char **argv)
 	// an then IO devices threads
 	startIO();
 
-	int_console.start_thread();
+	int_console = new InternalConsole(console_port);
+	int_console->start_thread();
 
 	/* we are finally ready to start the machine, by issuing
 	 * the KVM_RUN ioctl() on the vcpu_fd. While the machine
