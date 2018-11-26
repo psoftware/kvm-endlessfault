@@ -18,6 +18,13 @@
 
 #include "commlib.h"
 
+#include "../backend/ConsoleLog.h"
+
+// logger globale
+extern ConsoleLog& logg;
+
+using namespace std;
+
 int tcp_connect(const char *ip_addr, uint16_t port) {
 	int sock_client = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -153,8 +160,7 @@ int recv_field_message(int cl_sock, uint8_t &type, uint8_t &subtype, netfields* 
 	if(ret == 0 || ret == -1)
 		return ret;
 
-	printf("got type %u\n", type);
-	printf("got %u fields\n", fields_count);
+	//logg << "receiving " << fields_count << " fields" << endl;
 
 	// allocate nfields->data and nfields->size
 	nfields = new netfields(fields_count);
@@ -166,7 +172,7 @@ int recv_field_message(int cl_sock, uint8_t &type, uint8_t &subtype, netfields* 
 		if(ret == 0 || ret == -1)
 			return ret;
 
-		printf("field %u with size %u\n", field, field_len);
+		//logg << "field " << field << " with size " << field_len << endl;
 
 		// save field len
 		nfields->size[field] = field_len;
@@ -176,8 +182,6 @@ int recv_field_message(int cl_sock, uint8_t &type, uint8_t &subtype, netfields* 
 
 		// receive field
 		ret = recv(cl_sock, (void*)nfields->data[field], nfields->size[field], MSG_WAITALL);
-		if(ret == 0 || ret == -1)
-			return ret;
 		if(ret < field_len)
 		{
 			printf("recv_variable_string: Byte ricevuti (%d) minori di quelli previsti!\n", ret);
@@ -206,7 +210,9 @@ int send_field_message(int cl_sock, uint8_t type, uint8_t subtype, const netfiel
 	// send the number of array elements to read
 	ret = send(cl_sock, (void*)(&nfields.count), sizeof(nfields.count), 0);
 	if(ret == 0 || ret == -1)
-		return ret;
+		return -1;
+
+	//logg << "sending " << nfields.count << " fields" << endl;
 
 	// send all fields
 	for(uint32_t field=0; field<nfields.count; field++)
@@ -215,6 +221,8 @@ int send_field_message(int cl_sock, uint8_t type, uint8_t subtype, const netfiel
 		ret = send(cl_sock, (void*)&nfields.size[field], sizeof(uint32_t), 0);
 		if(ret == 0 || ret == -1)
 			return ret;
+
+		//logg << "field " << field << " with size " << nfields.size[field] << endl;
 
 		ret = send(cl_sock, (void*)nfields.data[field], nfields.size[field], 0);
 		if(ret == 0 || ret == -1)
@@ -225,7 +233,8 @@ int send_field_message(int cl_sock, uint8_t type, uint8_t subtype, const netfiel
 			return -1;
 		}
 	}
-	return ret;
+
+	return 1;
 }
 
 int check_port_str(char * str)

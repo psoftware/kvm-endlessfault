@@ -65,7 +65,7 @@ public:
 	}
 
 	~netfields() {
-		printf("Destroying %p\n", data);
+		//printf("Destroying %p\n", data);
 		fflush(0);
 		delete[] data;
 		delete[] size;

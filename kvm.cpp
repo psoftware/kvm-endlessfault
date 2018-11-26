@@ -417,10 +417,10 @@ void start_source_migration(int vm_fd) {
 	// aspetta risposta
 	size = wait_for_message(cl_sock, TYPE_CONTINUE_MIGRATION, buff);
 	if(size == -1) {
-		cout << "start_source_migration: unexpected message TYPE" << endl;
+		logg << "start_source_migration: unexpected message TYPE" << endl;
 		exit(1);
 	} else if(size < 0) {
-		cout << "start_source_migration: receive error" << endl;
+		logg << "start_source_migration: receive error" << endl;
 		exit(1);
 	}
 
