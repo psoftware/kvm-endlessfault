@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# check parameters number
+if [ "$#" -ne 0 ]; then
+    echo "Error on parameters. Use: ./run_migr"
+    exit
+fi
+
+FIFOLOGPATH="fifo_migr.log"
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+
+# create the Named Pipe
+rm -f $FIFOLOGPATH
+mkfifo $FIFOLOGPATH
+
+# we start the terminal in another window executing kvm with the parameter passed to the script and set the log on the named pipe
+xterm -fn "-misc-*-medium-*-*-*-*-*-100-*-*-70-*-*" -T "EndlessFault" -e "$SCRIPTPATH/kvm -migr -logfile $FIFOLOGPATH" &
+
+#in the meanwhile we acquire kvm writes on the named pipe
+cat < $FIFOLOGPATH
