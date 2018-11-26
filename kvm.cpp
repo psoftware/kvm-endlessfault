@@ -405,6 +405,7 @@ void start_source_migration(int vm_fd) {
 	if(cl_sock < 0)
 	{
 		logg << "start_source_migration: cannot connect to migration destination" << endl;
+		int_console.print_string("cannot connect to migration destination\n");
 		return;
 	}
 
@@ -474,7 +475,7 @@ void start_source_migration(int vm_fd) {
 		{
 			if(dirty_bitmap[bitmap_offset] & bit_mask)
 			{
-				logg << "page " << i << " is dirty!" << endl;
+				logg << "page " << std::dec << i << " is dirty!" << endl;
 				no_more_pages = false; // cycle must go on
 
 				pthread_mutex_lock(&big_lock);
@@ -500,6 +501,11 @@ void start_source_migration(int vm_fd) {
 
 		// if there are no more dirty pages and we are not at the last cycle (to avoid infinite cycle)
 		if(no_more_pages && remaining_cycles != 0) {
+			int_console.print_string("stopping with ");
+			char int_str[12];
+			sprintf(int_str, "%u", remaining_cycles);
+			int_console.print_string(int_str);
+			int_console.print_string(" remaining cycles\n");
 			// we need just another cycle after stopping VM to be sure that
 			// all the dirty pages are sent to the other VMM instance
 			remaining_cycles = 1;
