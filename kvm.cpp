@@ -394,6 +394,9 @@ int kvm_start_dirty_pages_logging(int vm_fd) {
 	return 0;
 }
 
+// port can be changed with -migrport start parameter
+uint16_t migration_port = 9090;
+
 void start_source_migration(int vm_fd) {
 	static const uint32_t MAX_DIRTY_PAGE_CYCLES = 1000;
 
@@ -401,7 +404,7 @@ void start_source_migration(int vm_fd) {
 	uint32_t size;
 
 	// start connection
-	int cl_sock = tcp_connect("127.0.0.1", 9090);
+	int cl_sock = tcp_connect("127.0.0.1", migration_port);
 	if(cl_sock < 0)
 	{
 		logg << "start_source_migration: cannot connect to migration destination" << endl;
@@ -782,11 +785,13 @@ int main(int argc, char **argv)
 
 	// ===== Get input parameters =====
 
-	bool is_migrating = false;
 	char default_log_file[] = "console.log";
 	char *log_file = default_log_file;
 	char *elf_file_path = nullptr;
 	uint16_t console_port = 9000;
+
+	bool is_migrating = false;
+	bool migration_port_defined = false;
 
 	for(int i=1; i<argc; i++) {
 		if(!strcmp(argv[i], "-logfile")) {
@@ -810,6 +815,14 @@ int main(int argc, char **argv)
 			}
 			console_port = (uint16_t)atoi(argv[++i]);
 		}
+		else if(!strcmp(argv[i], "-migrport")) {
+			if(i+1 >= argc) {
+				cout << "Incorrect Format. Use: kvm <elf file> [-logfile filefifo, -migr]" << endl;
+				exit(1);
+			}
+			migration_port_defined = true;
+			migration_port = (uint16_t)atoi(argv[++i]);
+		}
 		else {
 			if(elf_file_path != nullptr) {
 				cout << "Incorrect Format. Use: kvm <elf file> [-logfile filefifo, -migr]" << endl;
@@ -821,12 +834,17 @@ int main(int argc, char **argv)
 
 	// check for missing parameters
 	if(!is_migrating && elf_file_path == nullptr) {
-		cout << "Incorrect Format. Use: kvm <elf file> [-logfile filefifo, -migr]" << endl;
+		cout << "Unspecified elf file. Use: kvm <elf file> [-logfile filefifo, -migr]" << endl;
 		exit(1);
 	}
 
 	if(is_migrating && elf_file_path != nullptr) {
-		cout << "Incorrect Format. Use: kvm <elf file> [-logfile filefifo, -migr]" << endl;
+		cout << "Elf file cannot be specified together with -migr. Use: kvm <elf file> [-logfile filefifo, -migr]" << endl;
+		exit(1);
+	}
+
+	if(!is_migrating && migration_port_defined) {
+		cout << "-migrport used without -migr. Use: kvm <elf file> [-logfile filefifo, -migr]" << endl;
 		exit(1);
 	}
 
