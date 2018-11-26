@@ -774,27 +774,54 @@ int main(int argc, char **argv)
 	uint32_t mem_size;
 	uint16_t serv_port;
 
-	bool is_migrating = false;
+	// ===== Get input parameters =====
 
-	// check input parameters
-	if(argc == 2 && !strcmp(argv[1], "-migr"))
-		is_migrating = true;
-	else if(argc != 2 && (argc ==1 || argc == 3 || (argc == 4 && strcmp(argv[2], "-logfile"))) ) {
-		cout << "Format not correct. Use: kvm <elf file> [-logfile filefifo]" << endl;
-		return 1;
+	bool is_migrating = false;
+	char default_log_file[] = "console.log";
+	char *log_file = default_log_file;
+	char *elf_file_path = nullptr;
+
+	for(int i=1; i<argc; i++) {
+		if(!strcmp(argv[i], "-logfile")) {
+			if(log_file != default_log_file || i+1 >= argc) {
+				cout << "Incorrect Format. Use: kvm <elf file> [-logfile filefifo, -migr]" << endl;
+				exit(1);
+			}
+			log_file = argv[++i];
+		}
+		else if(!strcmp(argv[i], "-migr")) {
+			if(is_migrating) {
+				cout << "Incorrect Format. Use: kvm <elf file> [-logfile filefifo, -migr]" << endl;
+				exit(1);
+			}
+			is_migrating = true;
+		}
+		else {
+			if(elf_file_path != nullptr) {
+				cout << "Incorrect Format. Use: kvm <elf file> [-logfile filefifo, -migr]" << endl;
+				exit(1);
+			}
+			elf_file_path = argv[i];
+		}
 	}
 
-	logg.setFilePath("console.log");
+	// check for missing parameters
+	if(!is_migrating && elf_file_path == nullptr) {
+		cout << "Incorrect Format. Use: kvm <elf file> [-logfile filefifo, -migr]" << endl;
+		exit(1);
+	}
 
-	char *elf_file_path;
+	if(is_migrating && elf_file_path != nullptr) {
+		cout << "Incorrect Format. Use: kvm <elf file> [-logfile filefifo, -migr]" << endl;
+		exit(1);
+	}
+
+	// ================================
+
+	logg.setFilePath(log_file);
+
 	if(!is_migrating) {
-		// if a specified file to log into
-		if(argc == 4 && !strcmp(argv[2], "-logfile"))
-			logg.setFilePath(argv[3]);
-
-
 		// check path validity
-		elf_file_path = argv[1];
 		FILE *elf_file = fopen(elf_file_path, "r");
 		if(!elf_file) {
 			cout << "The selected executable does not exist" << endl;
