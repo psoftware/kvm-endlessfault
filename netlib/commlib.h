@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
+bool is_valid_IP(const char *ipAddress);
 int check_port_str(char *str);
 
 int tcp_connect(const char *ip_addr, uint16_t port);

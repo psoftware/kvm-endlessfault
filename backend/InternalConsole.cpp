@@ -83,9 +83,13 @@ bool InternalConsole::process_command(char *str_in, char *str_out) {
 			return true;
 		}
 
+		int port = check_port_str(str_params[2]);
+		if(!is_valid_IP(str_params[1]) || port == -1) {
+			strncpy(str_out, "Invalid ip address or port\n", 1000);
+			return true;
+		}
 
-
-		start_source_migration(get_vm_fd(), str_params[1], atoi(str_params[2]));
+		start_source_migration(get_vm_fd(), str_params[1], port);
 		str_out[0] = '\0';
 	}
 	else

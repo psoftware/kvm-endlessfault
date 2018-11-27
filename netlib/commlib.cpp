@@ -25,6 +25,13 @@ extern ConsoleLog& logg;
 
 using namespace std;
 
+bool is_valid_IP(const char *ipAddress)
+{
+    struct sockaddr_in sa;
+    int result = inet_pton(AF_INET, ipAddress, &(sa.sin_addr));
+    return result != 0;
+}
+
 int tcp_connect(const char *ip_addr, uint16_t port) {
 	int sock_client = socket(AF_INET, SOCK_STREAM, 0);
 
