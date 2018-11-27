@@ -22,6 +22,7 @@ public:
 	bool print_string(const char* str);
 
 private:
-	bool process_command(const char *str_in, char *str_out);
+	int split_parameters(char *str, char** &substr);
+	bool process_command(char *str_in, char *str_out);
 	static void* _mainThread(void *param);
 };

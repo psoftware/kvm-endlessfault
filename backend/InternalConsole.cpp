@@ -49,16 +49,49 @@ bool InternalConsole::print_string(const char* str) {
 	return true;
 }
 
-bool InternalConsole::process_command(const char *str_in, char *str_out) {
-	if(!strcmp(str_in, "exit"))
+int InternalConsole::split_parameters(char *str, char** &substr) {
+	unsigned int len = strlen(str);
+	substr = new char*[len];
+
+	substr[0] = &str[0];
+	int substr_count = 1;
+	for(int i=0; i<len-1; i++) {
+		if(str[i] == ' ') {
+			str[i] = '\0';
+			substr[substr_count++] = &str[i+1];
+		}
+	}
+
+	return substr_count;
+}
+
+bool InternalConsole::process_command(char *str_in, char *str_out) {
+	char ** str_params;
+	int str_params_count = split_parameters(str_in, str_params);
+
+	if(str_params_count == 0) {
+		strncpy(str_out, "unrecognized command\n", 1000);
+		return true;
+	}
+
+	if(!strcmp(str_params[0], "exit"))
 		return false;
-	else if(!strcmp(str_in, "migrate"))
+	else if(!strcmp(str_params[0], "migrate"))
 	{
-		start_source_migration(get_vm_fd());
+		if(str_params_count != 3) {
+			strncpy(str_out, "Usage: migrate <ip> <port>\n", 1000);
+			return true;
+		}
+
+
+
+		start_source_migration(get_vm_fd(), str_params[1], atoi(str_params[2]));
 		str_out[0] = '\0';
 	}
 	else
 		strncpy(str_out, "unrecognized command\n", 1000);
+
+	delete[] str_params;
 
 	return true;
 }

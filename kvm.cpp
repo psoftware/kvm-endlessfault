@@ -397,14 +397,14 @@ int kvm_start_dirty_pages_logging(int vm_fd) {
 // port can be changed with -migrport start parameter
 uint16_t migration_port = 9090;
 
-void start_source_migration(int vm_fd) {
+void start_source_migration(int vm_fd, const char* address, uint16_t port) {
 	static const uint32_t MAX_DIRTY_PAGE_CYCLES = 1000;
 
 	uint8_t *buff;
 	uint32_t size;
 
 	// start connection
-	int cl_sock = tcp_connect("127.0.0.1", migration_port);
+	int cl_sock = tcp_connect(address, port);
 	if(cl_sock < 0)
 	{
 		logg << "start_source_migration: cannot connect to migration destination" << endl;
@@ -640,7 +640,7 @@ void start_source_migration(int vm_fd) {
 }
 
 void start_destination_migration() {
-	int srv_sock = tcp_start_server("0.0.0.0", 9090);
+	int srv_sock = tcp_start_server("0.0.0.0", migration_port);
 	int cl_sock = tcp_accept_client(srv_sock);
 
 	if(cl_sock < 0){
