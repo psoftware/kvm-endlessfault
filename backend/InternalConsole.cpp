@@ -51,6 +51,10 @@ bool InternalConsole::print_string(const char* str) {
 
 int InternalConsole::split_parameters(char *str, char** &substr) {
 	unsigned int len = strlen(str);
+
+	if(len == 0)
+		return 0;
+
 	substr = new char*[len];
 
 	substr[0] = &str[0];
@@ -69,23 +73,25 @@ bool InternalConsole::process_command(char *str_in, char *str_out) {
 	char ** str_params;
 	int str_params_count = split_parameters(str_in, str_params);
 
-	if(str_params_count == 0) {
-		strncpy(str_out, "unrecognized command\n", 1000);
+	// initialize str_out to empty string
+	str_out[0] = '\0';
+
+	// if str_in is empty
+	if(str_params_count == 0)
 		return true;
-	}
 
 	if(!strcmp(str_params[0], "exit"))
 		return false;
 	else if(!strcmp(str_params[0], "migrate"))
 	{
 		if(str_params_count != 3) {
-			strncpy(str_out, "Usage: migrate <ip> <port>\n", 1000);
+			strncpy(str_out, "Usage: migrate <ip> <port>\n", RECEIVE_BUFFER_SIZE);
 			return true;
 		}
 
 		int port = check_port_str(str_params[2]);
 		if(!is_valid_IP(str_params[1]) || port == -1) {
-			strncpy(str_out, "Invalid ip address or port\n", 1000);
+			strncpy(str_out, "Invalid ip address or port\n", RECEIVE_BUFFER_SIZE);
 			return true;
 		}
 
@@ -93,7 +99,7 @@ bool InternalConsole::process_command(char *str_in, char *str_out) {
 		str_out[0] = '\0';
 	}
 	else
-		strncpy(str_out, "unrecognized command\n", 1000);
+		strncpy(str_out, "unrecognized command\n", RECEIVE_BUFFER_SIZE);
 
 	delete[] str_params;
 
@@ -120,10 +126,10 @@ void* InternalConsole::_mainThread(void *param) {
 		This->current_cl_sock = tcp_accept_client(This->srv_sock);
 		int ret;
 
-		char rec_str[1000];
+		char rec_str[RECEIVE_BUFFER_SIZE];
 		unsigned int rec_len = 0;
 
-		char resp_str[1000];
+		char resp_str[RECEIVE_BUFFER_SIZE];
 
 		// send "vmm console>"
 		strcpy(resp_str, "vmm console> ");
@@ -142,13 +148,13 @@ void* InternalConsole::_mainThread(void *param) {
 
 			if(c == '\n') {
 				// ensure there is always at least a termination char
-				rec_str[(rec_len == 0) ? 0 : rec_len-1] = '\0';
+				rec_str[rec_len] = '\0';
 
 				// execute command
 				bool requires_stop = !This->process_command(rec_str, resp_str);
 
 				// ensure there is always at least a termination char
-				resp_str[1000-1] = '\0';
+				resp_str[RECEIVE_BUFFER_SIZE-1] = '\0';
 
 				// send all resp_str buffer bytes
 				if(!This->print_string(resp_str))
@@ -167,7 +173,7 @@ void* InternalConsole::_mainThread(void *param) {
 				strcpy(resp_str, "vmm console> ");
 				if(!This->print_string(resp_str))
 					break;
-			} else if(rec_len <= 1000) {
+			} else if(rec_len <= RECEIVE_BUFFER_SIZE && c != '\r') {
 				rec_str[rec_len] = c;
 				rec_len++;
 			}

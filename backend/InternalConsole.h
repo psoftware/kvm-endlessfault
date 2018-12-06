@@ -7,6 +7,7 @@
 using namespace std;
 
 class InternalConsole {
+	static const int RECEIVE_BUFFER_SIZE = 1000;
 	pthread_t _thread;
 
 	uint16_t port;
