@@ -30,7 +30,9 @@ void InternalConsole::start_thread() {
 }
 
 void InternalConsole::stop_thread() {
+	shutdown(current_cl_sock, SHUT_RDWR);
 	close(current_cl_sock);
+	shutdown(srv_sock, SHUT_RDWR);
 	close(srv_sock);
 }
 
@@ -128,6 +130,9 @@ void* InternalConsole::_mainThread(void *param) {
 
 	while(true) {
 		This->current_cl_sock = tcp_accept_client(This->srv_sock);
+		if(This->current_cl_sock < 0)
+			continue;
+
 		int ret;
 
 		char rec_str[RECEIVE_BUFFER_SIZE];
