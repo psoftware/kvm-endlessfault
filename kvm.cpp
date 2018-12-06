@@ -395,7 +395,7 @@ int kvm_start_dirty_pages_logging(int vm_fd) {
 }
 
 // port can be changed with -migrport start parameter
-uint16_t migration_port = 9090;
+uint16_t migration_port = 8000;
 
 void start_source_migration(int vm_fd, const char* address, uint16_t port) {
 	static const uint32_t MAX_DIRTY_PAGE_CYCLES = 1000;
