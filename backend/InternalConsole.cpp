@@ -82,6 +82,10 @@ bool InternalConsole::process_command(char *str_in, char *str_out) {
 
 	if(!strcmp(str_params[0], "exit"))
 		return false;
+	else if(!strcmp(str_params[0], "help") || !strcmp(str_params[0], "?")) {
+		strncpy(str_out, "Commands: help, migrate, exit\n", RECEIVE_BUFFER_SIZE);
+		return true;
+	}
 	else if(!strcmp(str_params[0], "migrate"))
 	{
 		if(str_params_count != 3) {
