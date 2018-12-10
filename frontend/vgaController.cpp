@@ -127,6 +127,8 @@ uint16_t* VGAController::getVMem(){
 
 // for network serialization
 bool VGAController::field_serialize(netfields* &nfields) {
+	pthread_mutex_lock(&mutex);
+
 	nfields = new netfields(4);
 	int f_id = 0;
 
@@ -138,6 +140,8 @@ bool VGAController::field_serialize(netfields* &nfields) {
 
 	// uint16_t* _memoryStart;
 	// ADDRESS! Must be reinitialized by the new VMM instance
+
+	pthread_mutex_unlock(&mutex);
 
 	return true;
 

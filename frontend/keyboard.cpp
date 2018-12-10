@@ -127,6 +127,8 @@ err:
 
 // for network serialization
 bool keyboard::field_serialize(netfields* &nfields) {
+	pthread_mutex_lock(&mutex);
+
 	nfields = new netfields(11);
 	int f_id = 0;
 
@@ -151,6 +153,8 @@ bool keyboard::field_serialize(netfields* &nfields) {
 	// mutex istanza (vale sia per frontend che backend)
 	// come farlo? Mi basterebbe solo il counter interno...
 	// pthread_mutex_t mutex;
+
+	pthread_mutex_unlock(&mutex);
 
 	return true;
 }
