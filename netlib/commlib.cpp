@@ -54,6 +54,12 @@ int tcp_connect(const char *ip_addr, uint16_t port) {
 int tcp_start_server(const char * bind_addr, int port)
 {
 	int ret_sock = socket(AF_INET, SOCK_STREAM, 0);
+
+	// force address reuse
+	int enable = 1;
+	if(setsockopt(ret_sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+		perror("setsockopt(SO_REUSEADDR) failed");
+
 	struct sockaddr_in my_addr;
 	memset(&my_addr, 0, sizeof(my_addr));
 	my_addr.sin_family = AF_INET;
