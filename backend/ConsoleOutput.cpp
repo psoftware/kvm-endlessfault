@@ -1,5 +1,7 @@
 #include "ConsoleOutput.h"
 
+#include <signal.h>
+
 ConsoleOutput::ConsoleOutput()
 {
 	tcgetattr(STDOUT_FILENO, &tty_attr_old);
@@ -53,6 +55,15 @@ bool ConsoleOutput::startThread()
 
 void* ConsoleOutput::_mainThread(void *This_par)
 {
+	// mask all signals
+	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set, SIGTERM);
+	sigaddset(&set, SIGHUP);
+	sigaddset(&set, SIGINT);
+	sigaddset(&set, SIGUSR1);
+	pthread_sigmask(SIG_BLOCK, &set, NULL);
+
 	ConsoleOutput* This = (ConsoleOutput*)This_par;
 
 	cout<<HIDE_CURSOR;
@@ -124,6 +135,15 @@ void* ConsoleOutput::_mainThread(void *This_par)
 
 void* ConsoleOutput::_blinkThread(void *param)
 {
+	// mask all signals
+	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set, SIGTERM);
+	sigaddset(&set, SIGHUP);
+	sigaddset(&set, SIGINT);
+	sigaddset(&set, SIGUSR1);
+	pthread_sigmask(SIG_BLOCK, &set, NULL);
+
 	ConsoleOutput* This = (ConsoleOutput*)param;
 
 	while(true){

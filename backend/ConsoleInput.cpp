@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include "ConsoleInput.h"
 
@@ -62,6 +63,14 @@ bool ConsoleInput::startEventThread() {
 
 void* ConsoleInput::_mainThread(void *This_par)
 {
+	// mask all signals
+	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set, SIGTERM);
+	sigaddset(&set, SIGHUP);
+	sigaddset(&set, SIGINT);
+	sigaddset(&set, SIGUSR1);
+	pthread_sigmask(SIG_BLOCK, &set, NULL);
 
 	ConsoleInput* This = (ConsoleInput*)This_par;
 
