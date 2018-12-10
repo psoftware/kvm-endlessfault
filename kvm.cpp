@@ -454,12 +454,13 @@ void start_source_migration(int vm_fd, const char* address, uint16_t port) {
 
 	// Send all dirty pages
 	kvm_dirty_log dirty_log;
-	memset(&dirty_log, 0, sizeof(dirty_log));
-	dirty_log.slot = 0;
 
 	unsigned int remaining_cycles = MAX_DIRTY_PAGE_CYCLES;
+	bool last_cycle = false;
 
 	while(remaining_cycles-- > 0) {
+		memset(&dirty_log, 0, sizeof(dirty_log));
+		dirty_log.slot = 0;
 		dirty_log.dirty_bitmap = (void*) new uint8_t[GUEST_PHYSICAL_MEMORY_SIZE/PAGE_SIZE/8];
 
 		if(ioctl(vm_fd, KVM_GET_DIRTY_LOG, &dirty_log) < 0) {
@@ -481,7 +482,7 @@ void start_source_migration(int vm_fd, const char* address, uint16_t port) {
 				logg << "page " << std::dec << i << " is dirty!" << endl;
 				no_more_pages = false; // cycle must go on
 
-				pthread_mutex_lock(&big_lock);
+				//pthread_mutex_lock(&big_lock);
 
 				if(send_memory_message(cl_sock, i, &guest_physical_memory[i*PAGE_SIZE], PAGE_SIZE) < 0) {
 					logg << "start_source_migration: cannot send memory page -> " << strerror(errno) << endl;
@@ -489,7 +490,7 @@ void start_source_migration(int vm_fd, const char* address, uint16_t port) {
 					return;
 				}
 
-				pthread_mutex_unlock(&big_lock);
+				//pthread_mutex_unlock(&big_lock);
 			}
 
 			//logg << "bitmap_offset = " << bitmap_offset << " bit_mask = " << std::bitset<64>(bit_mask) << " " << bitmap_offset*(sizeof(bitmap_offset)*8) << endl;
@@ -502,8 +503,12 @@ void start_source_migration(int vm_fd, const char* address, uint16_t port) {
 				bit_mask = bit_mask << 1;
 		}
 
-		// if there are no more dirty pages and we are not at the last cycle (to avoid infinite cycle)
-		if(no_more_pages && remaining_cycles != 0) {
+
+		// if there are no more dirty pages or we have reached the last iteration
+		if((no_more_pages || remaining_cycles == 0) && !last_cycle) {
+			// schedule a next last cycle
+			last_cycle = true;
+
 			int_console->print_string("stopping with ");
 			char int_str[12];
 			sprintf(int_str, "%u", remaining_cycles);
@@ -521,7 +526,9 @@ void start_source_migration(int vm_fd, const char* address, uint16_t port) {
 
 			// wait while VMM saves the states.
 			void *join_res;
-			pthread_join(main_thread, &join_res);
+			if(pthread_join(main_thread, &join_res) != 0) {
+				logg << "cannot perform migration: pthread_join failed -> " << strerror(errno) << endl;
+			}
 
 			// VM is now fully stopped.
 		}
