@@ -656,6 +656,7 @@ void start_destination_migration() {
 	}
 
 	logg << "client connected" << endl;
+	cout << "Migration started" << endl;
 
 	uint8_t *buff;
 	uint32_t size;
