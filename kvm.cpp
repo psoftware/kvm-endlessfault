@@ -431,6 +431,10 @@ void start_source_migration(int vm_fd, const char* address, uint16_t port) {
 	logg << "-----> starting migration" << endl;
 	int_console->print_string("-----> starting migration\n");
 
+	// start logging dirty pages (before main cycle start)
+	if(kvm_start_dirty_pages_logging(vm_fd) < 0)
+		return;
+
 	// 2) Send all pages at once
 	for(unsigned int i=0; i<GUEST_PHYSICAL_MEMORY_SIZE/PAGE_SIZE; i++)
 	{
@@ -449,8 +453,6 @@ void start_source_migration(int vm_fd, const char* address, uint16_t port) {
 	int_console->print_string("-----> first memory transfer completed\n");
 
 	// 3) Start dirty page logging
-	if(kvm_start_dirty_pages_logging(vm_fd) < 0)
-		return;
 
 	// Send all dirty pages
 	kvm_dirty_log dirty_log;
